@@ -10,6 +10,10 @@ import undetected_chromedriver as uc
 from bs4 import BeautifulSoup
 import pickle
 from fake_useragent import UserAgent
+from typing import List
+import csv
+from playsound import playsound
+import vlc
 
 CREDS = [
     {"username": "jhoewong49@gmail.com", "password": "ikacantik2302"},
@@ -282,6 +286,17 @@ class LinkedinScraper:
 
         return results
 
+    def _save_to_csv(self, fieldnames: List, data: List, filename: str):
+        # open the CSV file for writing
+        with open(filename, "w", newline="") as csvfile:
+            # create a CSV writer object
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            # write the header row
+            writer.writeheader()
+            # write the data rows
+            for row in data:
+                writer.writerow(row)
+
     def _driver(self):
         chrome_options = uc.ChromeOptions()
         # options.headless = True
@@ -307,12 +322,24 @@ class LinkedinScraper:
             logger.info(rows)
             self.cursor.executemany("INSERT INTO ids VALUES(?,?,?,?,?,?);", rows)
             self.conn.commit()
+            logger.info("DONE UPLOADING RAW DATA")
+            return
         # get scrapped id
-        self.cursor.execute(f"SELECT startup_uuid from ids where is_scrapped=1")
+        self.cursor.execute(f"SELECT * from ids where is_scrapped=1")
         scrapped_id = self.cursor.fetchall()
+        logger.info(scrapped_id)
+        fields = [
+            "organization_name",
+            "startup_uuid",
+            "founder_name",
+            "linkedin_url",
+            "is_scrapped",
+            "is_scrapped_profile",
+        ]
+        # save to csv
+        self._save_to_csv(fields, scrapped_id, "scrapped_id.csv")
         scrapped_startup_uuid = [i["startup_uuid"] for i in scrapped_id]
         logger.info(scrapped_id)
-        # logger.info(len(scrapped_id))
         # sleep(30)
         cookies = cookiejar_from_dict(
             {
@@ -338,7 +365,6 @@ class LinkedinScraper:
             )
             cookies = pickle.load(open("cookies2.pkl", "rb"))
             driver.get(crunchbase_url)
-            sleep(7)
             html = driver.page_source
             soup = BeautifulSoup(html, "html.parser")
             for li in soup.select('li:-soup-contains("Founders")'):
@@ -347,10 +373,19 @@ class LinkedinScraper:
                         webcache_url + "https://www.crunchbase.com" + a["href"]
                     )
                     logger.info(founder_url)
+                    self.filename = "cookies3.pkl"
+                    self.load(driver)
                     driver.get(founder_url)
                     # pickle.dump(driver.get_cookies(), open("cookies3.pkl", "wb"))
-                    sleep(10)
                     founder_html = driver.page_source
+                    if "About this page" in founder_html:
+                        logger.info("CAPTCHA DETECTED")
+                        p = vlc.MediaPlayer("file:///path/to/track.mp3")
+                        p.play()
+                        p.stop()
+                        # playsound("alarm.mp3")
+                        sleep(15)
+
                     soup = BeautifulSoup(founder_html, "html.parser")
                     founder_linkedin_url_list = []
                     for li in soup.select('li:-soup-contains("View on LinkedIn")'):
@@ -363,25 +398,32 @@ class LinkedinScraper:
                                     "founder_name": founders_list,
                                     "linkedin_url": founder_linkedin_url,
                                     "is_scrapped": 1,
-                                    "is_scrapper_profile": 0,
+                                    "is_scrapped_profile": 0,
                                 }
                             )
             # drop duplicates name in founder_details
+            logger.info(founder_details_raw)
             processes_founder_details = []
-            for dictionary in founder_details_raw:
-                for founder_name in dictionary["founder_name"]:
-                    new_dict = {
-                        "organization_name": dictionary["organization_name"],
-                        "startup_uuid": dictionary["startup_uuid"],
-                        "founder_name": founder_name,
-                        "linkedin_url": dictionary["linkedin_url"],
-                        "is_scrapped": dictionary["is_scrapped"],
-                        "is_scrapper_profile": dictionary["is_scrapper_profile"],
-                    }
-                    if new_dict["founder_name"] not in [
-                        x["founder_name"] for x in processes_founder_details
-                    ]:
-                        processes_founder_details.append(new_dict)
+            founder_names = set()
+            linkedin_urls = set()
+            for item in founder_details_raw:
+                for name in item["founder_name"]:
+                    if (
+                        name not in founder_names
+                        and item["linkedin_url"] not in linkedin_urls
+                    ):
+                        processes_founder_details.append(
+                            {
+                                "organization_name": item["organization_name"],
+                                "startup_uuid": item["startup_uuid"],
+                                "founder_name": name,
+                                "linkedin_url": item["linkedin_url"],
+                                "is_scrapped": item["is_scrapped"],
+                                "is_scrapped_profile": item["is_scrapped_profile"],
+                            }
+                        )
+                        founder_names.add(name)
+                        linkedin_urls.add(item["linkedin_url"])
             # update data at DB after scrapping linkedin URL
             rows = [
                 (d["linkedin_url"], d["is_scrapped"], d["founder_name"])
@@ -396,8 +438,6 @@ class LinkedinScraper:
             logger.info(processes_founder_details)
             # driver.close()
             # driver.switch_to.window(driver.window_handles[0])
-            driver.quit()
-            sleep(7)
         self.cursor.execute(f"SELECT * from ids where is_scrapped=0")
         unscrapped_id = self.cursor.fetchall()
         logger.info(len(unscrapped_id))
@@ -418,6 +458,13 @@ class LinkedinScraper:
         # self.cursor.execute(f"SELECT * from ids where is_scrapped=1")
         # scrapped_id = self.cursor.fetchall()
         # logger.info(scrapped_id)
+
+    def load(self, driver):
+        driver.execute_cdp_cmd("Network.enable", {})
+        with open(self.filename, mode="rb") as f:
+            for cookie in pickle.load(f):
+                driver.execute_cdp_cmd("Network.setCookie", cookie)
+        driver.execute_cdp_cmd("Network.disable", {})
 
 
 if __name__ == "__main__":
