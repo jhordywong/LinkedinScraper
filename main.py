@@ -13,11 +13,12 @@ from fake_useragent import UserAgent
 from typing import List
 import csv
 from playsound import playsound
-import vlc
+import re
+from operator import itemgetter
 
 CREDS = [
     {"username": "jhoewong49@gmail.com", "password": "ikacantik2302"},
-    {"username": "nelawulansari4@gmail.com", "password": "Tanjakindo43_"},
+    {"username": "diviyi7246@rolenot.com", "password": "delman12"},
 ]
 
 
@@ -33,7 +34,7 @@ class LinkedinScraper:
             "records"
         )
         # self.client, self.cookies = self._build_client_and_cookies()
-        self.driver = self._driver()
+        # self.driver = self._driver()
         # init DB
         self.conn, self.cursor = self._db_engine()
 
@@ -162,133 +163,9 @@ class LinkedinScraper:
         else:
             logger.info(f"FAILED TO FETCH {res.status_code}")
 
-    def search(self, params, limit=None, results=[]):
-        """
-        Do a search.
-        """
-        count = (
-            limit
-            if limit and limit <= self._MAX_SEARCH_COUNT
-            else self._MAX_SEARCH_COUNT
-        )
-        default_params = {
-            "count": str(count),
-            "filters": "List()",
-            "origin": "GLOBAL_SEARCH_HEADER",
-            "q": "all",
-            "start": len(results),
-            "queryContext": "List(spellCorrectionEnabled->true,relatedSearchesEnabled->true,kcardTypes->PROFILE|COMPANY)",
-        }
-
-        default_params.update(params)
-
-        res = self._fetch(
-            f"/search/blended?{urlencode(default_params)}",
-            cookies=self.cookies,
-            headers={
-                "accept": "application/vnd.linkedin.normalized+json+2.1",
-                "csrf-token": self.cookies["JSESSIONID"].strip('"'),
-            },
-        )
-
-        data = res.json()
-
-        new_elements = []
-        for i in range(len(data["data"]["elements"])):
-            new_elements.extend(data["data"]["elements"][i]["elements"])
-            # not entirely sure what extendedElements generally refers to - keyword search gives back a single job?
-            # new_elements.extend(data["data"]["elements"][i]["extendedElements"])
-
-        results.extend(new_elements)
-        results = results[
-            :limit
-        ]  # always trim results, no matter what the request returns
-
-        # recursive base case
-        if (
-            limit is not None
-            and (
-                len(results) >= limit  # if our results exceed set limit
-                or len(results) / count >= self._MAX_REPEATED_REQUESTS
-            )
-        ) or len(new_elements) == 0:
-            return results
-
-        logger.info(f"results grew to {len(results)}")
-
-        return self.search(params, results=results, limit=limit)
-
-    def search_people(
-        self,
-        keywords=None,
-        connection_of=None,
-        network_depth=None,
-        current_company=None,
-        past_companies=None,
-        nonprofit_interests=None,
-        profile_languages=None,
-        regions=None,
-        industries=None,
-        schools=None,
-        include_private_profiles=False,  # profiles without a public id, "Linkedin Member"
-        limit=None,
-    ):
-        """
-        Do a people search.
-        """
-
-        def get_id_from_urn(urn):
-            """
-            Return the ID of a given Linkedin URN.
-
-            Example: urn:li:fs_miniProfile:<id>
-            """
-            return urn.split(":")[3]
-
-        filters = ["resultType->PEOPLE"]
-        if connection_of:
-            filters.append(f"connectionOf->{connection_of}")
-        if network_depth:
-            filters.append(f"network->{network_depth}")
-        if regions:
-            filters.append(f'geoRegion->{"|".join(regions)}')
-        if industries:
-            filters.append(f'industry->{"|".join(industries)}')
-        if current_company:
-            filters.append(f'currentCompany->{"|".join(current_company)}')
-        if past_companies:
-            filters.append(f'pastCompany->{"|".join(past_companies)}')
-        if profile_languages:
-            filters.append(f'profileLanguage->{"|".join(profile_languages)}')
-        if nonprofit_interests:
-            filters.append(f'nonprofitInterest->{"|".join(nonprofit_interests)}')
-        if schools:
-            filters.append(f'schools->{"|".join(schools)}')
-
-        params = {"filters": "List({})".format(",".join(filters))}
-
-        if keywords:
-            params["keywords"] = keywords
-
-        data = self.search(params, limit=limit)
-
-        results = []
-        for item in data:
-            if "publicIdentifier" not in item:
-                continue
-            results.append(
-                {
-                    "urn_id": get_id_from_urn(item.get("targetUrn")),
-                    "distance": item.get("memberDistance", {}).get("value"),
-                    "public_id": item.get("publicIdentifier"),
-                }
-            )
-
-        return results
-
     def _save_to_csv(self, fieldnames: List, data: List, filename: str):
         # open the CSV file for writing
-        with open(filename, "w", newline="") as csvfile:
+        with open(filename, "w", newline="", encoding="utf-8") as csvfile:
             # create a CSV writer object
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             # write the header row
@@ -299,19 +176,9 @@ class LinkedinScraper:
 
     def _driver(self):
         chrome_options = uc.ChromeOptions()
-        # options.headless = True
-        # options.add_argument("--headless")
-        # options.add_argument("--user-data-dir=F:\KERJA\BOT\Profile 8")
-        # chrome_options.add_argument("--headless")
-        # chrome_options.add_argument("--start-maximized")
-        # chrome_options.add_argument("--start-fullscreen")
-        # chrome_options.add_argument("--no-proxy-server")
-        # chrome_options.add_argument("--proxy-server='direct://'")
-        # chrome_options.add_argument("--proxy-bypass-list=*")
-        # chrome_options.add_argument("--no-sandbox")
         return uc.Chrome(options=chrome_options)
 
-    def _get_profile_id(self, insert_raw_data=False):
+    def _scrape_profile_id(self, insert_raw_data=False):
         if insert_raw_data:
             # insert founders to DB
             rows = [
@@ -327,7 +194,7 @@ class LinkedinScraper:
         # get scrapped id
         self.cursor.execute(f"SELECT * from ids where is_scrapped=1")
         scrapped_id = self.cursor.fetchall()
-        logger.info(scrapped_id)
+        # logger.info(scrapped_id)
         fields = [
             "organization_name",
             "startup_uuid",
@@ -340,55 +207,94 @@ class LinkedinScraper:
         self._save_to_csv(fields, scrapped_id, "scrapped_id.csv")
         scrapped_startup_uuid = [i["startup_uuid"] for i in scrapped_id]
         logger.info(scrapped_id)
-        # sleep(30)
-        cookies = cookiejar_from_dict(
-            {
-                "GOOGLE_ABUSE_EXEMPTION": "ID=31a6bc3604c6efad:TM=1678689048:C=r:IP=139.193.66.215-:S=rFV5WUECyjY39XNn8OZzOVg",
-            }
-        )
-        driver = self.driver
         webcache_url = "https://webcache.googleusercontent.com/search?q=cache:"
         founder_details = []
+
+        # check unscrapped user
+        self.cursor.execute(f"SELECT * from ids where is_scrapped=0")
+        unscrapped_id = self.cursor.fetchall()
+        unscrapped_companies = [i["organization_name"] for i in unscrapped_id]
+        logger.info(list(set(unscrapped_companies)))
+        logger.info(len(unscrapped_id))
+
+        # init session
+        client = requests.Session()
+        cookies = cookiejar_from_dict(
+            {
+                "GOOGLE_ABUSE_EXEMPTION": "ID=6237f06690b38ef4:TM=1678848583:C=r:IP=139.193.66.215-:S=QbamS_Bpks8BydOmmGH7Ngw"
+            }
+        )
+        google_abuse_url = ""
         for i in self.data:
             startup_id = i["startup_uuid"]
             # skip scrape if its already scrapped before
             if startup_id in scrapped_startup_uuid:
                 continue
+            organization_name = i["Organization Name"]
+            # skip scrape on company with no linkedin founder
+            if organization_name in [
+                "ForgeRock",
+                "Circuit of The Americas",
+                "Real Estate Elevated",
+                "Adaptive US Inc.",
+                "Oseberg",
+                "POMCO",
+                "Constellation Pharmaceuticals",
+                "Postup",
+                "Bia",
+                "UZURV, LLC",
+                "Represent",
+                "Iterable",
+                "Bellhop",
+                "Vera",
+                "Skorpios Technologies",
+                "Headspace",
+                "Alloy Digital",
+                "Compound Photonics",
+                "Eldridge Industries",
+                "Hanger",
+                "Essential",
+                "SEM RPM",
+                "Beats Music",
+                "Sera Prognostics",
+                "TutorMe",
+                "BrideClick",
+                "Temboo",
+                "Simtek",
+            ]:
+                continue
             founder_details_raw = []
-            founders_list = i["Founders"].split(", ")
-            crunchbase_url = webcache_url + i["Organization Name URL"]
-            ua = UserAgent()
-
-            driver.execute_cdp_cmd(
-                "Network.setExtraHTTPHeaders",
-                {"headers": {"User-Agent": str(ua.random)}},
+            crunchbase_url = (
+                webcache_url + i["Organization Name URL"] + google_abuse_url
             )
-            cookies = pickle.load(open("cookies2.pkl", "rb"))
-            driver.get(crunchbase_url)
-            html = driver.page_source
+            html = client.get(crunchbase_url, cookies=cookies).text
+            # Throe exception if captcha detected
+            if "About this page" in html:
+                playsound("F:\KERJA\BOT\LinkedInScraper\LinkedinScraper\song.mp3",)
+                raise Exception("CAPTCHA DETECTED")
+            logger.info(f"Scrapping {organization_name}")
             soup = BeautifulSoup(html, "html.parser")
+            founders_list = []
             for li in soup.select('li:-soup-contains("Founders")'):
                 for a in li.select("a.link-accent[href]"):
                     founder_url = (
-                        webcache_url + "https://www.crunchbase.com" + a["href"]
+                        webcache_url
+                        + "https://www.crunchbase.com"
+                        + a["href"]
+                        + google_abuse_url
                     )
-                    logger.info(founder_url)
-                    self.filename = "cookies3.pkl"
-                    self.load(driver)
-                    driver.get(founder_url)
-                    # pickle.dump(driver.get_cookies(), open("cookies3.pkl", "wb"))
-                    founder_html = driver.page_source
+                    founder_html = client.get(founder_url, cookies=cookies).text
                     if "About this page" in founder_html:
                         logger.info("CAPTCHA DETECTED")
-                        p = vlc.MediaPlayer("file:///path/to/track.mp3")
-                        p.play()
-                        p.stop()
-                        # playsound("alarm.mp3")
-                        sleep(15)
+                        playsound(
+                            "F:\KERJA\BOT\LinkedInScraper\LinkedinScraper\song.mp3",
+                        )
+                        raise Exception("CAPTCHA DETECTED")
 
                     soup = BeautifulSoup(founder_html, "html.parser")
                     founder_linkedin_url_list = []
                     for li in soup.select('li:-soup-contains("View on LinkedIn")'):
+                        founders_list.append(a.text.strip())
                         for a in li.select("a.link-accent[href]"):
                             founder_linkedin_url = a["href"]
                             founder_details_raw.append(
@@ -401,8 +307,8 @@ class LinkedinScraper:
                                     "is_scrapped_profile": 0,
                                 }
                             )
-            # drop duplicates name in founder_details
             logger.info(founder_details_raw)
+            # drop duplicates name in founder_details
             processes_founder_details = []
             founder_names = set()
             linkedin_urls = set()
@@ -426,38 +332,26 @@ class LinkedinScraper:
                         linkedin_urls.add(item["linkedin_url"])
             # update data at DB after scrapping linkedin URL
             rows = [
-                (d["linkedin_url"], d["is_scrapped"], d["founder_name"])
+                (
+                    d["organization_name"],
+                    d["startup_uuid"],
+                    d["founder_name"],
+                    d["linkedin_url"],
+                    1,
+                    0,
+                )
                 for d in processes_founder_details
             ]
-            self.cursor.executemany(
-                "UPDATE ids SET linkedin_url = ?, is_scrapped = ? WHERE founder_name = ?",
-                rows,
-            )
+            self.cursor.executemany("INSERT INTO ids VALUES(?,?,?,?,?,?);", rows)
             self.conn.commit()
             founder_details += processes_founder_details
-            logger.info(processes_founder_details)
-            # driver.close()
-            # driver.switch_to.window(driver.window_handles[0])
-        self.cursor.execute(f"SELECT * from ids where is_scrapped=0")
-        unscrapped_id = self.cursor.fetchall()
-        logger.info(len(unscrapped_id))
 
-        # new_scrapped_founder = []
-        # for i in unscrapped_id[:2]:
-        #     founder = i["founder_name"]
-        #     logger.info(founder)
-        #     founder_id = self.search_people(founder)[0]["public_id"]
-        #     logger.info(founder_id)
-        #     new_scrapped_founder.append((founder, founder_id, 1))
-
-        # logger.info(new_scrapped_founder)
-        # self.cursor.executemany(
-        #     "UPDATE ids SET id = ?, is_scrapped = ? WHERE founder_name = ?",
-        #     new_scrapped_founder,
-        # )
-        # self.cursor.execute(f"SELECT * from ids where is_scrapped=1")
-        # scrapped_id = self.cursor.fetchall()
-        # logger.info(scrapped_id)
+        self.cursor.execute(f"SELECT * from ids where is_scrapped=1")
+        scrapped_id = self.cursor.fetchall()
+        logger.info(scrapped_id)
+        unscrapped_companies = [i["organization_name"] for i in scrapped_id]
+        # logger.info(list(set(unscrapped_companies)))
+        # logger.info(len(scrapped_id))
 
     def load(self, driver):
         driver.execute_cdp_cmd("Network.enable", {})
@@ -466,12 +360,151 @@ class LinkedinScraper:
                 driver.execute_cdp_cmd("Network.setCookie", cookie)
         driver.execute_cdp_cmd("Network.disable", {})
 
+    def _scrape_profile(self, public_id: str) -> dict:
+        """Fetch data for a given LinkedIn profile.
+
+        :param public_id: LinkedIn public ID for a profile
+
+        :return: Profile data
+        :rtype: dict
+        """
+        res = self._fetch(
+            f"/identity/profiles/{public_id}/profileView",
+            cookies=self.cookies,
+            headers={"csrf-token": self.cookies["JSESSIONID"].strip('"'),},
+            for_alumni=True,
+        )
+        if not res:
+            return
+        data = res.json()
+        if data and "status" in data and data["status"] != 200:
+            logger.info(
+                "request failed: {}, with id {}".format(data["message"], public_id)
+            )
+            return {}
+
+        # message [profile] data
+        profile = data["profile"]
+        if "miniProfile" in profile:
+            if "picture" in profile["miniProfile"]:
+                images_data = profile["miniProfile"]["picture"][
+                    "com.linkedin.common.VectorImage"
+                ]["artifacts"]
+                for img in images_data:
+                    w, h, url_segment = itemgetter(
+                        "width", "height", "fileIdentifyingUrlPathSegment"
+                    )(img)
+                    profile[f"img_{w}_{h}"] = url_segment
+                profile["profile_dp_link"] = (
+                    profile["miniProfile"]["picture"][
+                        "com.linkedin.common.VectorImage"
+                    ]["rootUrl"]
+                    + profile["img_800_800"]
+                )
+            del profile["miniProfile"]
+
+        # message [experience] data
+        experience = data["positionView"]["elements"]
+        for item in experience:
+            if "company" in item and "miniCompany" in item["company"]:
+                if "logo" in item["company"]["miniCompany"]:
+                    logo = item["company"]["miniCompany"]["logo"].get(
+                        "com.linkedin.common.VectorImage"
+                    )
+                    if logo:
+                        item["companyLogoUrl"] = logo["rootUrl"]
+                del item["company"]["miniCompany"]
+            if "$anti_abuse_metadata" in item:
+                del item["$anti_abuse_metadata"]
+            del item["entityUrn"]
+
+        # message [education] data
+        education = data["educationView"]["elements"]
+        for item in education:
+            if "school" in item:
+                if "logo" in item["school"]:
+                    item["school"]["logoUrl"] = item["school"]["logo"][
+                        "com.linkedin.common.VectorImage"
+                    ]["rootUrl"]
+                    del item["school"]["logo"]
+
+        # message [languages] data
+        languages = data["languageView"]["elements"]
+        for item in languages:
+            del item["entityUrn"]
+
+        # message [publications] data
+        publications = data["publicationView"]["elements"]
+        for item in publications:
+            del item["entityUrn"]
+            for author in item.get("authors", []):
+                del author["entityUrn"]
+
+        # message [certifications] data
+        certifications = data["certificationView"]["elements"]
+        for item in certifications:
+            del item["entityUrn"]
+
+        # message [volunteer] data
+        volunteer = data["volunteerExperienceView"]["elements"]
+        for item in volunteer:
+            del item["entityUrn"]
+
+        # build profile information
+        result = {
+            "name": profile["firstName"] + " " + profile["lastName"],
+            "headline": profile.get("headline", None),
+            "profile_dp_link": profile.get("profile_dp_link", None),
+            "summary": profile.get("summary", None),
+            "location": profile.get("locationName", None),
+            "industryName": profile.get("industryName", None),
+            "experiences": experience,
+            "education": education,
+            "languages": languages,
+            "publications": publications,
+            "certifications": certifications,
+            "volunteer": volunteer,
+            "id": public_id,
+        }
+
+        return result
+
+    def _get_profile_id(self):
+        self.cursor.execute(f"SELECT * from ids where is_scrapped_profile=1")
+        scrapped_profile_f = self.cursor.fetchall()
+        scrapped_profile = [i["linkedin_url"] for i in scrapped_profile_f]
+        self.cursor.execute(f"SELECT * from ids where is_scrapped=1")
+        scrapped_id = self.cursor.fetchall()
+        logger.info(scrapped_id)
+        results = []
+        for i in scrapped_id[:1]:
+            logger.info(i)
+            linkedin_url = i["linkedin_url"]
+            if linkedin_url in scrapped_profile:
+                continue
+            id = re.findall(r"in/([\w-]+)/", linkedin_url + "/")[0]
+            id_details = self._scrape_profile(id)
+            result = {
+                "Organization Name(Column A)": i["organization_name"],
+                "uuid (Column B)": i["startup_uuid"],
+                "Name from Column E": i["founder_name"],
+                "LinkedIn Name": id_details["name"],
+                "experience": id_details["experiences"],
+                "education": id_details["education"],
+                "Profile Image URL": id_details["profile_dp_link"],
+                "Linkedin Link": i["linkedin_url"],
+            }
+            results.append(result)
+        return results
+
 
 if __name__ == "__main__":
     conn = LinkedinScraper()
-    conn._get_profile_id()
-    # conn._get_profile_id(insert_raw_data=True)
     # get profile id
+    # conn._scrape_profile_id(insert_raw_data=True)
+    conn._scrape_profile_id()
     # scrape profile id
+    # profile_id = conn._get_profile_id()
+    # logger.info(profile_id)
     # process or cleaning profile data
 

@@ -1,0 +1,168 @@
+[
+    {
+        "Organization Name(Column A)": "Parallel Wireless",
+        "uuid (Column B)": "006685e2-fb79-1473-7ce9-9828995c53a2",
+        "Name from Column E": "Kaitki Agarwal",
+        "LinkedIn Name": "Kaitki Agarwal",
+        "experience": [
+            {
+                "locationName": "Nashua, New Hampshire, United States",
+                "geoLocationName": "Nashua, New Hampshire, United States",
+                "geoUrn": "urn:li:fs_geo:106489956",
+                "companyName": "A5G Networks, Inc.",
+                "timePeriod": {
+                    "startDate": {
+                        "month": 11,
+                        "year": 2020
+                    }
+                },
+                "description": "I am Building a strong team to run operations, product and technology. \nThere are few interesting telecom disruption waves such as legacy voice, data to IMS/VoLTE, packet core, traditional RAN to OpenRAN and now the most recent one is the cloud native transformation of the telecom infrastructure, edge and 5G. I led the softswitch transition with SS7 at Lucent, legacy voice, data to VoLTE and packet core transition at Starent, founded Parallel Wireless and grew it to be a leader in All G OpenRAN.\n\nTo continue on the telecom disruption path, I have decided to start a new venture A5G Networks. I really enjoyed building and growing the team at Parallel Wireless and made many great friends. While I am going to miss the team, I am thrilled about my new journey with A5G Networks. Looking forward to working with the best minds in the industry and drive the 5G disruption. A5G is the trail blazer to create the mobile networks of the future.",
+                "company": {
+                    "employeeCountRange": {
+                        "start": 11,
+                        "end": 50
+                    },
+                    "industries": [
+                        "Telecommunications"
+                    ]
+                },
+                "title": "Founder, President and CTO",
+                "region": "urn:li:fs_region:(us,0)",
+                "companyUrn": "urn:li:fs_miniCompany:69712585",
+                "companyLogoUrl": "https://media.licdn.com/dms/image/C4E0BAQHoUAg2T2AXjQ/company-logo_"
+            },
+            {
+                "companyName": "Forbes Technology Council",
+                "timePeriod": {
+                    "startDate": {
+                        "month": 6,
+                        "year": 2022
+                    }
+                },
+                "description": "Sharing insights on Distributed Mobile Networks, edge, blockchain  with ForbesTechnology Council, an invitation-only organization for successful senior-level technology executives.",
+                "company": {
+                    "employeeCountRange": {
+                        "start": 11,
+                        "end": 50
+                    },
+                    "industries": [
+                        "Civic & Social Organization"
+                    ]
+                },
+                "title": "Official Member",
+                "companyUrn": "urn:li:fs_miniCompany:11075183",
+                "companyLogoUrl": "https://media.licdn.com/dms/image/C560BAQGWm60rwBPz-Q/company-logo_"
+            },
+            {
+                "companyName": "Harvard Business Review",
+                "timePeriod": {
+                    "startDate": {
+                        "month": 1,
+                        "year": 2022
+                    }
+                },
+                "description": "A member of the Harvard Business Review Advisory Council, an opt-in research community of business professionals.",
+                "company": {
+                    "employeeCountRange": {
+                        "start": 201,
+                        "end": 500
+                    },
+                    "industries": [
+                        "Publishing"
+                    ]
+                },
+                "title": "Advisor, HBR Advisory Council",
+                "companyUrn": "urn:li:fs_miniCompany:1649",
+                "companyLogoUrl": "https://media.licdn.com/dms/image/C560BAQEulgTy-dwxxg/company-logo_"
+            },
+            {
+                "companyName": "Fiberify, Inc.",
+                "timePeriod": {
+                    "startDate": {
+                        "month": 4,
+                        "year": 2022
+                    }
+                },
+                "description": "Strategic advisor to Fiberify. Fiberify is a software platform that optimizes the health of fiber optic networks by automating processes in the monitoring, maintenance, and management supply chain and pairing network operators with expert field technicians in real time through a two-sided platform specifically designed to decrease fault time to resolution and improve the broadband customer experience.",
+                "company": {
+                    "employeeCountRange": {
+                        "start": 2,
+                        "end": 10
+                    },
+                    "industries": [
+                        "Computer & Network Security"
+                    ]
+                },
+                "title": "Strategic Advisor",
+                "companyUrn": "urn:li:fs_miniCompany:65748924",
+                "companyLogoUrl": "https://media.licdn.com/dms/image/C4D0BAQH0MV93ZWJMIA/company-logo_"
+            },
+            {
+                "companyName": "Forbeswomen, DWENbassadors, IEEE WIE, Global Ambassador WomenTech Network, WOTC VIP Member",
+                "timePeriod": {
+                    "startDate": {
+                        "month": 1,
+                        "year": 2021
+                    }
+                },
+                "title": "Member/Leader"
+            }
+        ],
+        "education": [
+            {
+                "entityUrn": "urn:li:fs_education:(ACoAAABxEpABBRJdV2zU-eggLQkwlAyj8BU-W2U,3852142)",
+                "school": {
+                    "objectUrn": "urn:li:school:13502",
+                    "entityUrn": "urn:li:fs_miniSchool:13502",
+                    "active": true,
+                    "schoolName": "Indian Institute of Technology, Roorkee",
+                    "trackingId": "xwlCagsfSrCVDuhnZ91MuA==",
+                    "logoUrl": "https://media.licdn.com/dms/image/C510BAQFxnsvax1W4UQ/company-logo_"
+                },
+                "timePeriod": {
+                    "endDate": {
+                        "year": 1993
+                    },
+                    "startDate": {
+                        "year": 1989
+                    }
+                },
+                "degreeName": "Bachelor of Science (BS)",
+                "schoolName": "Indian Institute of Technology, Roorkee",
+                "fieldOfStudy": "Computer Science",
+                "schoolUrn": "urn:li:fs_miniSchool:13502"
+            },
+            {
+                "entityUrn": "urn:li:fs_education:(ACoAAABxEpABBRJdV2zU-eggLQkwlAyj8BU-W2U,60174239)",
+                "school": {
+                    "objectUrn": "urn:li:school:18452",
+                    "entityUrn": "urn:li:fs_miniSchool:18452",
+                    "active": true,
+                    "schoolName": "Babson F.W. Olin Graduate School of Business",
+                    "trackingId": "gkgg+iKHRlOt77CVlz1mwA==",
+                    "logoUrl": "https://media.licdn.com/dms/image/C4E0BAQErxNT3Y9EbEg/company-logo_"
+                },
+                "degreeName": "MBA",
+                "schoolName": "Babson College - Franklin W. Olin Graduate School of Business",
+                "fieldOfStudy": "Strategy and Entrepreneurship",
+                "schoolUrn": "urn:li:fs_miniSchool:18452"
+            },
+            {
+                "entityUrn": "urn:li:fs_education:(ACoAAABxEpABBRJdV2zU-eggLQkwlAyj8BU-W2U,645885149)",
+                "school": {
+                    "objectUrn": "urn:li:school:43608",
+                    "entityUrn": "urn:li:fs_miniSchool:43608",
+                    "active": true,
+                    "schoolName": "Kellogg Executive Education",
+                    "trackingId": "HBZG9/OQQ+2qES0R+QCiWg==",
+                    "logoUrl": "https://media.licdn.com/dms/image/C4E0BAQEdEYRqDWnkHg/company-logo_"
+                },
+                "schoolName": "Kellogg Executive Education",
+                "fieldOfStudy": "Product Strategy",
+                "schoolUrn": "urn:li:fs_miniSchool:43608"
+            }
+        ],
+        "Profile Image URL": "https://media.licdn.com/dms/image/C4E03AQEq53eIk5BoPg/profile-displayphoto-shrink_800_800/0/1599827442400?e=1684368000&v=beta&t=ijUBenqAZNC_XiZw0ifffrb5f7-EjtKnRAM2E9rSaT8",
+        "Linkedin Link": "https://www.linkedin.com/in/kaitki-agarwal-4685942/"
+    }
+]
