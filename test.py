@@ -1,7 +1,56 @@
-from pypasser import reCaptchaV3
+exp_list = [
+    {
+        "Company Name": "A5G Networks, Inc.",
+        "Company Location": "Greater Boston",
+        "Company URL": "https://linkedin.com/company/69712585",
+        "Position(Job Title)": "Founder & CEO",
+        "Period 1": "November/2020 - ",
+        "Period 2": "Still Working",
+    },
+    {
+        "Company Name": "Parallel Wireless, Inc.",
+        "Company Location": None,
+        "Company URL": "https://linkedin.com/company/2875687",
+        "Position(Job Title)": "Founder, President & CTO",
+        "Period 1": "May/2012 - November//2020",
+        "Period 2": "8yrs",
+    },
+    {
+        "Company Name": "Bramhand Consultancy Services Inc.",
+        "Company Location": None,
+        "Company URL": None,
+        "Position(Job Title)": "President",
+        "Period 1": "2007 - June//2012",
+        "Period 2": "5yrs",
+    },
+    {
+        "Company Name": "Sonus Networks",
+        "Company Location": None,
+        "Company URL": "https://linkedin.com/company/166054",
+        "Position(Job Title)": "Distinguished Engineer",
+        "Period 1": "September/2011 - May//2012",
+        "Period 2": "1yrs",
+    },
+    {
+        "Company Name": "Tatara Systems",
+        "Company Location": None,
+        "Company URL": "https://linkedin.com/company/19839",
+        "Position(Job Title)": "Software Architect",
+        "Period 1": "March/2010 - September//2011",
+        "Period 2": "1yrs",
+    },
+]
 
-reCaptcha_response = reCaptchaV3(
-    "https://www.google.com/recaptcha/api2/anchor?ar=1&k=6LfwuyUTAAAAAOAmoS0fdqijC2PbbdH4kjq62Y1b&co=aHR0cHM6Ly93d3cuZ29vZ2xlLmNvbTo0NDM.&hl=en&v=MuIyr8Ej74CrXhJDQy37RPBe&size=normal&s=EkPBz-SEE7P0snqVNoZobty7BzjJoW72VQPl9A8eNJfoJ5PSQMvyTsLb3TRC-2t_MPlpL06s0HOaUL2IZTLHNpoOSBo3eSwAVQ84UdqW5FT4XQGKWWooX3vzEmq2j6oYN5WOrRngOXNzi5ZBes31yIHG_Ol45XS73XRmgH-lhKnfgzA0F_ofJbd5lhE-8eoaDXfzvkIidd0rDhDjk1JmVf0T-yFhXqlWB9R7YBQ3y-kiGzzyKRdCKi0PXt-mIX-jBlFO6emVEH3Oqu3apDIm31wD2VogIyQ&cb=z42yo9kwobb8"
-)
-print(reCaptcha_response)
-## use this response in your request ...
+edu_list = [
+    {
+        "Education": "Indian Institute of Technology, Roorkee",
+        "Period 1 Edu": "May/1989 - July//1993",
+        "Period 2 Edu": "4yrs",
+    },
+    {
+        "Education": "Indian Institute of Technology, Roorkee 2",
+        "Period 1 Edu": "May/1985 - July//1988",
+        "Period 2 Edu": "3yrs",
+    },
+]
+

@@ -15,6 +15,8 @@ import csv
 from playsound import playsound
 import re
 from operator import itemgetter
+import datetime
+import json
 
 CREDS = [
     {"username": "jhoewong49@gmail.com", "password": "ikacantik2302"},
@@ -28,12 +30,12 @@ class LinkedinScraper:
         self._MAX_REPEATED_REQUESTS = (
             200  # VERY conservative max requests count to avoid rate-limit
         )
-        # self.list_of_li_at = self._get_li_at()
-        # self.li_at = self.list_of_li_at[0]
+        self.list_of_li_at = self._get_li_at()
+        self.li_at = self.list_of_li_at[0]
         self.data = pd.read_excel("LinkedIn_RACollection_3045_RA.xlsx").to_dict(
             "records"
         )
-        # self.client, self.cookies = self._build_client_and_cookies()
+        self.client, self.cookies = self._build_client_and_cookies()
         # self.driver = self._driver()
         # init DB
         self.conn, self.cursor = self._db_engine()
@@ -56,6 +58,18 @@ class LinkedinScraper:
             linkedin_url DATATYPE TEXT,
             is_scrapped DATATYPE INTEGER,
             is_scrapped_profile DATATYPE INTEGER
+        )"""
+        )
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS profiles_raw (
+            organization_name DATATYPE TEXT,
+            startup_uuid DATATYPE TEXT,
+            name_from_col_e DATATYPE TEXT,
+            linkedin_name DATATYPE TEXT,
+            experience DATATYPE TEXT,
+            education DATATYPE TEXT,
+            profile_image DATATYPE TEXT,
+            linkedin_url DATATYPE TEXT
         )"""
         )
         return conn, cursor
@@ -211,7 +225,7 @@ class LinkedinScraper:
         founder_details = []
 
         # check unscrapped user
-        self.cursor.execute(f"SELECT * from ids where is_scrapped=0")
+        self.cursor.execute("SELECT * from ids where is_scrapped=0")
         unscrapped_id = self.cursor.fetchall()
         unscrapped_companies = [i["organization_name"] for i in unscrapped_id]
         logger.info(list(set(unscrapped_companies)))
@@ -233,7 +247,6 @@ class LinkedinScraper:
             organization_name = i["Organization Name"]
             # skip scrape on company with no linkedin founder
             if organization_name in [
-                "ForgeRock",
                 "Circuit of The Americas",
                 "Real Estate Elevated",
                 "Adaptive US Inc.",
@@ -330,7 +343,7 @@ class LinkedinScraper:
                         )
                         founder_names.add(name)
                         linkedin_urls.add(item["linkedin_url"])
-            # update data at DB after scrapping linkedin URL
+            # insert data to after scrapping linkedin URL
             rows = [
                 (
                     d["organization_name"],
@@ -372,11 +385,11 @@ class LinkedinScraper:
             f"/identity/profiles/{public_id}/profileView",
             cookies=self.cookies,
             headers={"csrf-token": self.cookies["JSESSIONID"].strip('"'),},
-            for_alumni=True,
         )
         if not res:
             return
         data = res.json()
+        logger.info(data)
         if data and "status" in data and data["status"] != 200:
             logger.info(
                 "request failed: {}, with id {}".format(data["message"], public_id)
@@ -475,15 +488,15 @@ class LinkedinScraper:
         scrapped_profile = [i["linkedin_url"] for i in scrapped_profile_f]
         self.cursor.execute(f"SELECT * from ids where is_scrapped=1")
         scrapped_id = self.cursor.fetchall()
-        logger.info(scrapped_id)
         results = []
-        for i in scrapped_id[:1]:
+        for i in scrapped_id:
             logger.info(i)
             linkedin_url = i["linkedin_url"]
             if linkedin_url in scrapped_profile:
                 continue
             id = re.findall(r"in/([\w-]+)/", linkedin_url + "/")[0]
             id_details = self._scrape_profile(id)
+            logger.info(id_details)
             result = {
                 "Organization Name(Column A)": i["organization_name"],
                 "uuid (Column B)": i["startup_uuid"],
@@ -494,17 +507,129 @@ class LinkedinScraper:
                 "Profile Image URL": id_details["profile_dp_link"],
                 "Linkedin Link": i["linkedin_url"],
             }
+            row = tuple(result)
+            self.cursor.execute(
+                "INSERT INTO profiles_raw VALUES(?,?,?,?,?,?,?,?);", row
+            )
+            name = i["founder_name"]
+            self.cursor.execute(
+                "UPDATE ids SET is_scrapped_profile = 1 WHERE founder_name = ?", name,
+            )
+            self.conn.commit()
             results.append(result)
         return results
+
+    def extract_time_period(self, timeperiod: dict):
+        start_date_year = timeperiod["startDate"]["year"]
+        start_date_month = ""
+        if timeperiod.get("startDate") and timeperiod.get("startDate").get("month"):
+            start_date_month = (
+                datetime.date(1900, timeperiod["startDate"]["month"], 1).strftime("%B")
+                + "/"
+            )
+        start_date = start_date_month + str(start_date_year) + " - "
+        is_end_date_exist = timeperiod.get("endDate", None)
+        if is_end_date_exist:
+            end_date_year = timeperiod["endDate"]["year"]
+            end_date_month = ""
+            if timeperiod.get("endDate") and timeperiod.get("endDate").get("month"):
+                end_date_month = month = (
+                    datetime.date(1900, timeperiod["endDate"]["month"], 1).strftime(
+                        "%B"
+                    )
+                    + "/"
+                )
+            end_date = end_date_month + str(end_date_year)
+            period1 = start_date + end_date
+            period2 = str(end_date_year - start_date_year) + " yrs"
+        else:
+            period1 = start_date
+            period2 = "Still Working"
+        return period1, period2
+
+    def _process_scrapped_profile(self):
+        self.cursor.execute("SELECT * from profiles_raw")
+        scrapped_profile = self.cursor.fetchall()
+        f = open("ori.json")
+        profile_details = json.load(f)
+        results = []
+        for i in profile_details:
+            base_result = []
+            exp_list = []
+            for exp in i["experience"]:
+                company_urn = exp.get("companyUrn", None)
+                company_url = None
+                if company_urn:
+                    company_url = f"linkedin.com/company/{company_urn.split(':')[-1]}"
+                period1 = None
+                period2 = None
+                if exp["timePeriod"]:
+                    period1, period2 = self.extract_time_period(exp["timePeriod"])
+                result = {
+                    "Company Name": exp.get("companyName", None),
+                    "Company Location": exp.get("locationName", None),
+                    "Company URL": company_url,
+                    "Position(Job Title)": exp.get("title", None),
+                    "Period 1": period1,
+                    "Period 2": period2,
+                }
+                exp_list.append(result)
+            edu_list = []
+            for edu in i["education"]:
+                period1 = None
+                period2 = None
+                if edu["timePeriod"]:
+                    period1, period2 = self.extract_time_period(edu["timePeriod"])
+                result = {
+                    "Education": edu.get("schoolName", None),
+                    "Period 1 Edu": period1,
+                    "Period 2 Edu": period2,
+                }
+                edu_list.append(result)
+            # build base for exp and edu
+            if len(exp_list) > len(edu_list):
+                longer_list = exp_list
+                shorter_list = edu_list
+            else:
+                longer_list = edu_list
+                shorter_list = exp_list
+            for d in range(len(longer_list)):
+                if d < len(shorter_list):
+                    longer_list[d].update(shorter_list[d])
+                else:
+                    shorter_list = [{key: None for key in d} for d in shorter_list]
+                    longer_list[d].update(shorter_list[0])
+
+            for x in longer_list:
+                base_dict = {
+                    "Organization Name(Column A)": i["Organization Name(Column A)"],
+                    "uuid (Column B)": i["uuid (Column B)"],
+                    "Name from Column E": i["Name from Column E"],
+                    "LinkedIn Name": i["LinkedIn Name"],
+                }
+                base_dict.update(x)
+                base_result.append(base_dict)
+            logger.info(base_result)
+            # append linkedin_url
+            for data in base_result:
+                data.update({"Linkedin Link": i["Linkedin Link"]})
+
+            results += base_result
+
+        # write to csv
+        fields = list(results[0].keys())
+        self._save_to_csv(fields, results, "scrapped_profiles.csv")
+        logger.info(results)
 
 
 if __name__ == "__main__":
     conn = LinkedinScraper()
     # get profile id
     # conn._scrape_profile_id(insert_raw_data=True)
-    conn._scrape_profile_id()
+    # conn._scrape_profile_id()
     # scrape profile id
     # profile_id = conn._get_profile_id()
-    # logger.info(profile_id)
     # process or cleaning profile data
+    xxx = conn._scrape_profile("rmishra")
+    # result = conn._process_scrapped_profile()
 
