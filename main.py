@@ -17,11 +17,12 @@ import re
 from operator import itemgetter
 import datetime
 import json
+from linkedin_scraper import Person, actions
+import ast
+from seleniumbase import Driver
 
-CREDS = [
-    {"username": "jhoewong49@gmail.com", "password": "ikacantik2302"},
-    {"username": "diviyi7246@rolenot.com", "password": "delman12"},
-]
+CREDS = {"username": "jhoewong49@gmail.com", "password": "ikacantik2302"}
+# {"username": "jhordywongdiscord@gmail.com", "password": "ikacantik2302"}
 
 
 class LinkedinScraper:
@@ -30,12 +31,14 @@ class LinkedinScraper:
         self._MAX_REPEATED_REQUESTS = (
             200  # VERY conservative max requests count to avoid rate-limit
         )
-        self.list_of_li_at = self._get_li_at()
-        self.li_at = self.list_of_li_at[0]
+        self.username = CREDS["username"]
+        self.password = CREDS["password"]
+        # self.list_of_li_at = self._get_li_at()
+        # self.li_at = self.list_of_li_at[0]
         self.data = pd.read_excel("LinkedIn_RACollection_3045_RA.xlsx").to_dict(
             "records"
         )
-        self.client, self.cookies = self._build_client_and_cookies()
+        # self.client, self.cookies = self._build_client_and_cookies()
         # self.driver = self._driver()
         # init DB
         self.conn, self.cursor = self._db_engine()
@@ -373,114 +376,34 @@ class LinkedinScraper:
                 driver.execute_cdp_cmd("Network.setCookie", cookie)
         driver.execute_cdp_cmd("Network.disable", {})
 
-    def _scrape_profile(self, public_id: str) -> dict:
+    def _scrape_profile(self, linkedin_url: str, driver=None) -> dict:
         """Fetch data for a given LinkedIn profile.
 
-        :param public_id: LinkedIn public ID for a profile
+        :param linkedin_url: LinkedIn URL for a profile
 
         :return: Profile data
         :rtype: dict
         """
-        res = self._fetch(
-            f"/identity/profiles/{public_id}/profileView",
-            cookies=self.cookies,
-            headers={"csrf-token": self.cookies["JSESSIONID"].strip('"'),},
-        )
-        if not res:
-            return
-        data = res.json()
-        logger.info(data)
-        if data and "status" in data and data["status"] != 200:
-            logger.info(
-                "request failed: {}, with id {}".format(data["message"], public_id)
-            )
+        # driver = uc.Chrome()
+        # actions.login(driver, self.username, self.password, timeout=30)
+        sleep(0.5)
+        person = Person(linkedin_url, driver=driver, scrape=False, contacts=[])
+        person.scrape(close_on_complete=False)
+        d = person.__dict__.copy()
+        if not person.name:
             return {}
-
-        # message [profile] data
-        profile = data["profile"]
-        if "miniProfile" in profile:
-            if "picture" in profile["miniProfile"]:
-                images_data = profile["miniProfile"]["picture"][
-                    "com.linkedin.common.VectorImage"
-                ]["artifacts"]
-                for img in images_data:
-                    w, h, url_segment = itemgetter(
-                        "width", "height", "fileIdentifyingUrlPathSegment"
-                    )(img)
-                    profile[f"img_{w}_{h}"] = url_segment
-                profile["profile_dp_link"] = (
-                    profile["miniProfile"]["picture"][
-                        "com.linkedin.common.VectorImage"
-                    ]["rootUrl"]
-                    + profile["img_800_800"]
-                )
-            del profile["miniProfile"]
-
-        # message [experience] data
-        experience = data["positionView"]["elements"]
-        for item in experience:
-            if "company" in item and "miniCompany" in item["company"]:
-                if "logo" in item["company"]["miniCompany"]:
-                    logo = item["company"]["miniCompany"]["logo"].get(
-                        "com.linkedin.common.VectorImage"
-                    )
-                    if logo:
-                        item["companyLogoUrl"] = logo["rootUrl"]
-                del item["company"]["miniCompany"]
-            if "$anti_abuse_metadata" in item:
-                del item["$anti_abuse_metadata"]
-            del item["entityUrn"]
-
-        # message [education] data
-        education = data["educationView"]["elements"]
-        for item in education:
-            if "school" in item:
-                if "logo" in item["school"]:
-                    item["school"]["logoUrl"] = item["school"]["logo"][
-                        "com.linkedin.common.VectorImage"
-                    ]["rootUrl"]
-                    del item["school"]["logo"]
-
-        # message [languages] data
-        languages = data["languageView"]["elements"]
-        for item in languages:
-            del item["entityUrn"]
-
-        # message [publications] data
-        publications = data["publicationView"]["elements"]
-        for item in publications:
-            del item["entityUrn"]
-            for author in item.get("authors", []):
-                del author["entityUrn"]
-
-        # message [certifications] data
-        certifications = data["certificationView"]["elements"]
-        for item in certifications:
-            del item["entityUrn"]
-
-        # message [volunteer] data
-        volunteer = data["volunteerExperienceView"]["elements"]
-        for item in volunteer:
-            del item["entityUrn"]
-
-        # build profile information
-        result = {
-            "name": profile["firstName"] + " " + profile["lastName"],
-            "headline": profile.get("headline", None),
-            "profile_dp_link": profile.get("profile_dp_link", None),
-            "summary": profile.get("summary", None),
-            "location": profile.get("locationName", None),
-            "industryName": profile.get("industryName", None),
-            "experiences": experience,
-            "education": education,
-            "languages": languages,
-            "publications": publications,
-            "certifications": certifications,
-            "volunteer": volunteer,
-            "id": public_id,
+        del d["driver"]
+        d["experiences"] = [experience.__dict__ for experience in person.experiences]
+        d["educations"] = [education.__dict__ for education in person.educations]
+        name_raw = person.name.split("\n")[0]
+        name = re.sub(r"(.)([A-Z][a-z]+)", r"\1 \2", name_raw)
+        results = {
+            "name": name,
+            "experiences": d["experiences"],
+            "educations": d["educations"],
+            "profile_dp_link": d["profile_picture"],
         }
-
-        return result
+        return results
 
     def _get_profile_id(self):
         self.cursor.execute(f"SELECT * from ids where is_scrapped_profile=1")
@@ -489,34 +412,43 @@ class LinkedinScraper:
         self.cursor.execute(f"SELECT * from ids where is_scrapped=1")
         scrapped_id = self.cursor.fetchall()
         results = []
+        driver = Driver(uc=True)
+        # driver = uc.Chrome()
+        actions.login(
+            driver, self.username, self.password, timeout=30
+        )  # if email and password isnt given, it'll prompt in terminal
         for i in scrapped_id:
-            logger.info(i)
             linkedin_url = i["linkedin_url"]
             if linkedin_url in scrapped_profile:
                 continue
-            id = re.findall(r"in/([\w-]+)/", linkedin_url + "/")[0]
-            id_details = self._scrape_profile(id)
+            logger.info(f"SCRAPPING {linkedin_url}")
+            id_details = self._scrape_profile(linkedin_url, driver)
             logger.info(id_details)
             result = {
                 "Organization Name(Column A)": i["organization_name"],
                 "uuid (Column B)": i["startup_uuid"],
                 "Name from Column E": i["founder_name"],
                 "LinkedIn Name": id_details["name"],
-                "experience": id_details["experiences"],
-                "education": id_details["education"],
+                "experience": str(id_details["experiences"]),
+                "education": str(id_details["educations"]),
                 "Profile Image URL": id_details["profile_dp_link"],
                 "Linkedin Link": i["linkedin_url"],
             }
-            row = tuple(result)
+            row = tuple(result.values())
+            logger.info(row)
             self.cursor.execute(
                 "INSERT INTO profiles_raw VALUES(?,?,?,?,?,?,?,?);", row
             )
+            self.conn.commit()
             name = i["founder_name"]
             self.cursor.execute(
-                "UPDATE ids SET is_scrapped_profile = 1 WHERE founder_name = ?", name,
+                "UPDATE ids SET is_scrapped_profile = 1 WHERE founder_name = ?", (name,)
             )
             self.conn.commit()
             results.append(result)
+        logger.info(results)
+        with open("data.json", "w") as f:
+            json.dump(results, f)
         return results
 
     def extract_time_period(self, timeperiod: dict):
@@ -550,40 +482,59 @@ class LinkedinScraper:
     def _process_scrapped_profile(self):
         self.cursor.execute("SELECT * from profiles_raw")
         scrapped_profile = self.cursor.fetchall()
-        f = open("ori.json")
-        profile_details = json.load(f)
+        logger.info(scrapped_profile)
+        f = open("data.json")
         results = []
-        for i in profile_details:
+        for i in scrapped_profile:
             base_result = []
             exp_list = []
-            for exp in i["experience"]:
-                company_urn = exp.get("companyUrn", None)
-                company_url = None
-                if company_urn:
-                    company_url = f"linkedin.com/company/{company_urn.split(':')[-1]}"
-                period1 = None
-                period2 = None
-                if exp["timePeriod"]:
-                    period1, period2 = self.extract_time_period(exp["timePeriod"])
+            experiences = ast.literal_eval(i["experience"])
+            for exp in experiences:
+                start_date = exp.get("from_date")
+                end_date = exp.get("to_date")
+                duration = exp.get("duration")
+                if start_date and end_date:
+                    period1 = (
+                        start_date + " To " + end_date.replace("Saat ini", "Present")
+                    )
+                elif start_date and not end_date:
+                    period1 = start_date
+                duration = exp.get("duration")
+                if duration:
+                    duration = duration.replace("thn", "yrs").replace("bln", "mos")
                 result = {
-                    "Company Name": exp.get("companyName", None),
-                    "Company Location": exp.get("locationName", None),
-                    "Company URL": company_url,
-                    "Position(Job Title)": exp.get("title", None),
+                    "Company Name": exp.get("institution_name", None),
+                    "Company Location": exp.get("location", None),
+                    "Company URL": exp.get("linkedin_url", None),
+                    "Position(Job Title)": exp.get("position_title", None),
                     "Period 1": period1,
-                    "Period 2": period2,
+                    "Period 2": duration,
                 }
                 exp_list.append(result)
             edu_list = []
-            for edu in i["education"]:
-                period1 = None
-                period2 = None
-                if edu["timePeriod"]:
-                    period1, period2 = self.extract_time_period(edu["timePeriod"])
+            educations = ast.literal_eval(i["education"])
+            for edu in educations:
+                start_date = edu.get("from_date")
+                end_date = edu.get("to_date")
+                duration = None
+                if start_date and end_date:
+                    period1 = (
+                        start_date + " To " + end_date.replace("Saat ini", "Present")
+                    )
+                    start_date_num = re.findall(r"\d+", start_date)
+                    end_date_num = re.findall(r"\d+", end_date)
+                    duration = (
+                        str(int(end_date_num[0]) - int(start_date_num[0])) + " yrs"
+                    )
+                elif start_date and not end_date:
+                    period1 = start_date
+                else:
+                    period1 = None
                 result = {
-                    "Education": edu.get("schoolName", None),
+                    "Education": edu.get("institution_name", None),
                     "Period 1 Edu": period1,
-                    "Period 2 Edu": period2,
+                    "Period 2 Edu": duration,
+                    "Degree": edu.get("degree", None),
                 }
                 edu_list.append(result)
             # build base for exp and edu
@@ -597,29 +548,33 @@ class LinkedinScraper:
                 if d < len(shorter_list):
                     longer_list[d].update(shorter_list[d])
                 else:
-                    shorter_list = [{key: None for key in d} for d in shorter_list]
-                    longer_list[d].update(shorter_list[0])
+                    if shorter_list:
+                        shorter_list = [{key: None for key in d} for d in shorter_list]
+                        longer_list[d].update(shorter_list[0])
 
             for x in longer_list:
+                profile_image = i["profile_image"]
+                if "data:image/gif" in profile_image:
+                    profile_image = "No Profile Image"
                 base_dict = {
-                    "Organization Name(Column A)": i["Organization Name(Column A)"],
-                    "uuid (Column B)": i["uuid (Column B)"],
-                    "Name from Column E": i["Name from Column E"],
-                    "LinkedIn Name": i["LinkedIn Name"],
+                    "Organization Name(Column A)": i["organization_name"],
+                    "uuid (Column B)": i["startup_uuid"],
+                    "Name from Column E": i["name_from_col_e"],
+                    "LinkedIn Name": i["linkedin_name"],
+                    "Profile Image URL": profile_image,
                 }
                 base_dict.update(x)
                 base_result.append(base_dict)
             logger.info(base_result)
             # append linkedin_url
             for data in base_result:
-                data.update({"Linkedin Link": i["Linkedin Link"]})
+                data.update({"Linkedin Link": i["linkedin_url"]})
 
             results += base_result
 
         # write to csv
         fields = list(results[0].keys())
         self._save_to_csv(fields, results, "scrapped_profiles.csv")
-        logger.info(results)
 
 
 if __name__ == "__main__":
@@ -628,8 +583,11 @@ if __name__ == "__main__":
     # conn._scrape_profile_id(insert_raw_data=True)
     # conn._scrape_profile_id()
     # scrape profile id
-    # profile_id = conn._get_profile_id()
-    # process or cleaning profile data
-    xxx = conn._scrape_profile("rmishra")
+    profile_id = conn._get_profile_id()
     # result = conn._process_scrapped_profile()
+
+    # xxx = conn._scrape_profile("https://www.linkedin.com/in/kaitki-agarwal-4685942")
+    # xxx = conn._scrape_profile("https://www.linkedin.com/in/charles-taylor-01765421")
+
+    # process or cleaning profile data
 

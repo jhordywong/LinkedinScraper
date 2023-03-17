@@ -1,56 +1,30 @@
-exp_list = [
-    {
-        "Company Name": "A5G Networks, Inc.",
-        "Company Location": "Greater Boston",
-        "Company URL": "https://linkedin.com/company/69712585",
-        "Position(Job Title)": "Founder & CEO",
-        "Period 1": "November/2020 - ",
-        "Period 2": "Still Working",
-    },
-    {
-        "Company Name": "Parallel Wireless, Inc.",
-        "Company Location": None,
-        "Company URL": "https://linkedin.com/company/2875687",
-        "Position(Job Title)": "Founder, President & CTO",
-        "Period 1": "May/2012 - November//2020",
-        "Period 2": "8yrs",
-    },
-    {
-        "Company Name": "Bramhand Consultancy Services Inc.",
-        "Company Location": None,
-        "Company URL": None,
-        "Position(Job Title)": "President",
-        "Period 1": "2007 - June//2012",
-        "Period 2": "5yrs",
-    },
-    {
-        "Company Name": "Sonus Networks",
-        "Company Location": None,
-        "Company URL": "https://linkedin.com/company/166054",
-        "Position(Job Title)": "Distinguished Engineer",
-        "Period 1": "September/2011 - May//2012",
-        "Period 2": "1yrs",
-    },
-    {
-        "Company Name": "Tatara Systems",
-        "Company Location": None,
-        "Company URL": "https://linkedin.com/company/19839",
-        "Position(Job Title)": "Software Architect",
-        "Period 1": "March/2010 - September//2011",
-        "Period 2": "1yrs",
-    },
-]
+import undetected_chromedriver as uc
+from time import sleep
+from linkedin_scraper import Person, actions, JobSearch, Job
+from selenium import webdriver
 
-edu_list = [
-    {
-        "Education": "Indian Institute of Technology, Roorkee",
-        "Period 1 Edu": "May/1989 - July//1993",
-        "Period 2 Edu": "4yrs",
-    },
-    {
-        "Education": "Indian Institute of Technology, Roorkee 2",
-        "Period 1 Edu": "May/1985 - July//1988",
-        "Period 2 Edu": "3yrs",
-    },
-]
+# driver = webdriver.Chrome()
+driver = uc.Chrome()
+all_users = {}
+email = "jhoewong49@gmail.com"
+password = "ikacantik2302"
+actions.login(
+    driver, email, password, timeout=50
+)  # if email and password isnt given, it'll prompt in terminal
+sleep(0.5)
+line = "https://www.linkedin.com/in/kaitki-agarwal-4685942/"
+job = Job(
+    "https://www.linkedin.com/jobs/search/?currentJobId=3500726464&geoId=102436504&location=Z%C3%BCrich%2C%20Schweiz&refresh=true&sortBy=R",
+    driver=driver,
+    close_on_complete=False,
+)
+# person = Person(line, driver=driver, scrape=False)
+# person.scrape(close_on_complete=False)
+# d = person.__dict__.copy()
+# del d["driver"]
+# d["experiences"] = [experience.__dict__ for experience in person.experiences]
+# d["educations"] = [education.__dict__ for education in person.educations]
+# all_users[person.name] = d  # saves it all to one giant dict
+print(job)
+# print(all_users)
 

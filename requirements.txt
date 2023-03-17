@@ -1,0 +1,9 @@
+selenium
+requests
+lxml
+undetected-chromedriver
+pandas
+bs4
+playsound==1.2.2
+linkedin_scraper
+
