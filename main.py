@@ -41,8 +41,8 @@ class LinkedinScraper:
         self.data = pd.read_excel("LinkedIn_RACollection_3045_RA.xlsx").to_dict(
             "records"
         )
-        self.proxies = self._get_proxy_list()
-        self.client, self.cookies = self._build_client_and_cookies()
+        # self.proxies = self._get_proxy_list()
+        # self.client, self.cookies = self._build_client_and_cookies()
         # self.driver = self._driver()
         # init DB
         self.conn, self.cursor = self._db_engine()
@@ -77,6 +77,16 @@ class LinkedinScraper:
             education DATATYPE TEXT,
             profile_image DATATYPE TEXT,
             linkedin_url DATATYPE TEXT
+        )"""
+        )
+        cursor.execute(
+            """CREATE TABLE IF NOT EXISTS deleted_account (
+            organization_name DATATYPE TEXT,
+            startup_uuid DATATYPE TEXT,
+            founder_name DATATYPE TEXT,
+            linkedin_url DATATYPE TEXT,
+            is_scrapped DATATYPE INTEGER,
+            is_scrapped_profile DATATYPE INTEGER
         )"""
         )
         return conn, cursor
@@ -394,7 +404,7 @@ class LinkedinScraper:
         person.scrape(close_on_complete=False)
         d = person.__dict__.copy()
         if not person.name:
-            return {}
+            return None
         del d["driver"]
         d["experiences"] = [experience.__dict__ for experience in person.experiences]
         d["educations"] = [education.__dict__ for education in person.educations]
@@ -430,8 +440,7 @@ class LinkedinScraper:
             i for i in scrapped_id if i["linkedin_url"] not in scrapped_profile
         ]
         for i in range(len(filtered_scrapped_id)):
-            logger.info(f"RANDOM {random_loop}")
-            logger.info(proxy)
+            logger.info(f"SCRAPING {random_loop} account with proxy {proxy}")
             ua = UserAgent(browsers=["chrome"])
             driver = Driver(uc=True, incognito=True, proxy=proxy)
             actions.login(
@@ -445,6 +454,13 @@ class LinkedinScraper:
                 #     continue
                 logger.info(f"SCRAPPING {linkedin_url}")
                 id_details = self._scrape_profile(linkedin_url, driver)
+                if not id_details:
+                    row = tuple(i.values())
+                    self.cursor.execute(
+                        "INSERT INTO deleted_account VALUES(?,?,?,?,?,?);", row
+                    )
+                    self.conn.commit()
+                    continue
                 logger.info(id_details)
                 result = {
                     "Organization Name(Column A)": i["organization_name"],
@@ -464,12 +480,14 @@ class LinkedinScraper:
                     "INSERT INTO profiles_raw VALUES(?,?,?,?,?,?,?,?);", row
                 )
                 self.conn.commit()
+                sleep(0.3)
                 name = i["founder_name"]
                 self.cursor.execute(
                     "UPDATE ids SET is_scrapped_profile = 1 WHERE founder_name = ?",
                     (name,),
                 )
                 self.conn.commit()
+                sleep(0.3)
                 results.append(result)
                 counter += 1
                 sleep_counter += 1
@@ -530,7 +548,6 @@ class LinkedinScraper:
     def _process_scrapped_profile(self):
         self.cursor.execute("SELECT * from profiles_raw")
         scrapped_profile = self.cursor.fetchall()
-        logger.info(scrapped_profile)
         f = open("data.json")
         results = []
         for i in scrapped_profile:
@@ -543,13 +560,35 @@ class LinkedinScraper:
                 duration = exp.get("duration")
                 if start_date and end_date:
                     period1 = (
-                        start_date + " To " + end_date.replace("Saat ini", "Present")
+                        (start_date + " To " + end_date.replace("Saat ini", "Present"))
+                        .replace("ini", "Present")
+                        .replace("Ini", "Present")
                     )
                 elif start_date and not end_date:
                     period1 = start_date
                 duration = exp.get("duration")
+                if not duration and start_date and end_date:
+                    start_date_num = re.findall(r"\d+", start_date)
+                    end_date_num = re.findall(r"\d+", end_date)
+                    if end_date == "Present":
+                        end_date_num = [2023]
+                    if end_date_num:
+                        duration = (
+                            str(int(end_date_num[0]) - int(start_date_num[0])) + " yrs"
+                        )
                 if duration:
                     duration = duration.replace("thn", "yrs").replace("bln", "mos")
+                if duration and start_date and not end_date:
+                    duration_num = re.findall(r"\d+", duration)
+                    start_date_num = re.findall(r"\d+", start_date)
+                    if duration_num:
+                        end_date = int(start_date_num[0]) + int(duration_num[0])
+                        logger.info(f"ennd {end_date}")
+                        period1 = str(start_date_num[0]) + " To " + str(end_date)
+                if period1:
+                    check_period1_valid = re.findall(r"\d+", period1)
+                    if not check_period1_valid:
+                        period1 = None
                 result = {
                     "Company Name": exp.get("institution_name", None),
                     "Company Location": exp.get("location", None),
@@ -564,14 +603,15 @@ class LinkedinScraper:
             for edu in educations:
                 start_date = edu.get("from_date")
                 end_date = edu.get("to_date")
+                degree = edu.get("degree")
                 duration = None
                 if start_date and end_date:
                     period1 = (
                         start_date
                         + " To "
-                        + end_date.replace("Saat ini", "Present").replace(
-                            "Ini", "Present"
-                        )
+                        + end_date.replace("Saat ini", "Present")
+                        .replace("Ini", "Present")
+                        .replace("ini", "Present")
                     )
                     start_date_num = re.findall(r"\d+", start_date)
                     end_date_num = re.findall(r"\d+", end_date)
@@ -582,11 +622,18 @@ class LinkedinScraper:
                     period1 = start_date
                 else:
                     period1 = None
+                if degree and not start_date and not end_date:
+                    num = re.findall(r"\d+", degree)
+                    if len(num) > 1:
+                        period1 = degree
+                        duration = str(int(num[1]) - int(num[0])) + " yrs"
+                        degree = None
+
                 result = {
                     "Education": edu.get("institution_name", None),
                     "Period 1 Edu": period1,
                     "Period 2 Edu": duration,
-                    "Degree": edu.get("degree", None),
+                    "Degree": degree,
                 }
                 edu_list.append(result)
             # build base for exp and edu
@@ -617,7 +664,6 @@ class LinkedinScraper:
                 }
                 base_dict.update(x)
                 base_result.append(base_dict)
-            logger.info(base_result)
             # append linkedin_url
             for data in base_result:
                 data.update({"Linkedin Link": i["linkedin_url"]})
@@ -641,14 +687,15 @@ class LinkedinScraper:
                 response = requests.get(
                     "http://example.com",
                     proxies={"http": proxy, "https": proxy},
-                    timeout=5,
+                    # timeout=2,
                 )
                 if response.status_code == 200:
                     working_proxy.append(proxy)
-            except:
-                return False
+            except Exception as e:
+                logger.info(f"ERROR ON {proxy}: {e}")
+                continue
         if not working_proxy:
-            raise ("NO PROXY IS WORKING")
+            logger.info("NO PROXY IS WORKING")
         logger.info(f"WORKING PROXY {working_proxy}")
         return working_proxy
 
@@ -660,8 +707,8 @@ if __name__ == "__main__":
     # conn._scrape_profile_id()
     # scrape profile id
     # conn._get_proxy_list()
-    profile_id = conn._get_profile_id()
-    # result = conn._process_scrapped_profile()
+    # profile_id = conn._get_profile_id()
+    result = conn._process_scrapped_profile()
 
     # xxx = conn._scrape_profile("https://www.linkedin.com/in/kaitki-agarwal-4685942")
     # xxx = conn._scrape_profile("https://www.linkedin.com/in/charles-taylor-01765421")
