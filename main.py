@@ -24,6 +24,8 @@ import random
 from fake_useragent import UserAgent
 
 CREDS = {"username": "jhordy@delman.io", "password": "delman12"}
+# {"username": "jhoewong49@gmail.com", "password": "ikacantik2302"}
+# {"username": "jhordy@delman.io", "password": "delman12"}
 LI_AT = "AQEDARJHdUsDsmjOAAABhu9sjrIAAAGHE3kSslYAT4cmcKMgSJ3KCzX8AmIpWhbsuTKzy4_LHBHpnz8FpW3MNCQ4WR1oLUXJH2D66eQ87Aq50Bf9eBayxg3I8JVx8XDIuIc4zviLbv_ycnhIoNproVrT"
 
 
@@ -41,7 +43,7 @@ class LinkedinScraper:
         self.data = pd.read_excel("LinkedIn_RACollection_3045_RA.xlsx").to_dict(
             "records"
         )
-        # self.proxies = self._get_proxy_list()
+        self.proxies = self._get_proxy_list()
         # self.client, self.cookies = self._build_client_and_cookies()
         # self.driver = self._driver()
         # init DB
@@ -420,11 +422,21 @@ class LinkedinScraper:
 
     def _get_profile_id(self):
         # Get latest data from DB
-        self.cursor.execute(f"SELECT * from ids where is_scrapped_profile=1")
-        scrapped_profile_f = self.cursor.fetchall()
-        scrapped_profile = [i["linkedin_url"] for i in scrapped_profile_f]
-        self.cursor.execute(f"SELECT * from ids where is_scrapped=1")
+        exclude = [
+            "http://www.linkedin.com/in/johnayers1",
+            "https://www.linkedin.com/in/petercli89",
+            "https://www.linkedin.com/in/cedric-mcdougal-he-him-2b99021a",
+            "https://www.linkedin.com/in/dalecheney",
+            "https://www.linkedin.com/in/stephen-h-gordon-7740ab167",
+            "https://www.linkedin.com/in/sumitkn",
+            "https://www.linkedin.com/in/david-chou-51921a37/",
+            "https://www.linkedin.com/in/shuey-robert-86167651",
+        ]
+        self.cursor.execute(f"SELECT * from ids where is_scrapped_profile=0")
         scrapped_id = self.cursor.fetchall()
+        filtered_scrapped_id = [
+            i for i in scrapped_id if i["linkedin_url"] not in exclude
+        ]
 
         # Create webdriver with first proxy in list
         proxy_index = 0
@@ -433,15 +445,14 @@ class LinkedinScraper:
 
         # Use proxies in rotation with each request
         results = []
-        random_loop = random.randint(3, 5)
+        random_loop = random.randint(4, 7)
         counter = 0
-        sleep_counter = 0
-        filtered_scrapped_id = [
-            i for i in scrapped_id if i["linkedin_url"] not in scrapped_profile
-        ]
-        for i in range(len(filtered_scrapped_id)):
+
+        driver = None
+        for i in range(10000):
             logger.info(f"SCRAPING {random_loop} account with proxy {proxy}")
-            ua = UserAgent(browsers=["chrome"])
+            if driver:
+                driver.quit()
             driver = Driver(uc=True, incognito=True, proxy=proxy)
             actions.login(
                 driver, self.username, self.password, timeout=300
@@ -460,8 +471,8 @@ class LinkedinScraper:
                         "INSERT INTO deleted_account VALUES(?,?,?,?,?,?);", row
                     )
                     self.conn.commit()
+                    counter += 1
                     continue
-                logger.info(id_details)
                 result = {
                     "Organization Name(Column A)": i["organization_name"],
                     "uuid (Column B)": i["startup_uuid"],
@@ -475,7 +486,6 @@ class LinkedinScraper:
 
                 # update scrapped data to DB
                 row = tuple(result.values())
-                logger.info(row)
                 self.cursor.execute(
                     "INSERT INTO profiles_raw VALUES(?,?,?,?,?,?,?,?);", row
                 )
@@ -490,12 +500,14 @@ class LinkedinScraper:
                 sleep(0.3)
                 results.append(result)
                 counter += 1
-                sleep_counter += 1
             # if sleep_counter == 5:
             #     sleep_counter = 0
             #     logger.info("SLEEPING FOR 10s EVERY 5 ACCOUNT SCRAPPED")
             #     sleep(10)
-            if counter % random_loop == 0:
+            logger.info(f"COUNT {counter}")
+            if counter == random_loop:
+                logger.info("MASUK")
+                counter = 0
                 # Update webdriver options with new proxy
                 proxy_index += 1
                 if proxy_index == len(self.proxies):
@@ -503,13 +515,14 @@ class LinkedinScraper:
                 proxy = self.proxies[proxy_index]
 
                 # update latest filtered id
-                self.cursor.execute(f"SELECT * from ids where is_scrapped_profile=1")
-                scrapped_profile_f = self.cursor.fetchall()
-                scrapped_profile = [i["linkedin_url"] for i in scrapped_profile_f]
+                self.cursor.execute(f"SELECT * from ids where is_scrapped_profile=0")
+                scrapped_f = self.cursor.fetchall()
                 filtered_scrapped_id = [
-                    i for i in scrapped_id if i["linkedin_url"] not in scrapped_profile
+                    i for i in scrapped_f if i["linkedin_url"] not in exclude
                 ]
+                logger.info(f"FILTER {filtered_scrapped_id[0]}")
                 random_loop = random.randint(3, 5)
+                sleep(0.2)
                 driver.quit()
 
         logger.info(results)
@@ -687,13 +700,17 @@ class LinkedinScraper:
                 response = requests.get(
                     "http://example.com",
                     proxies={"http": proxy, "https": proxy},
-                    # timeout=2,
+                    timeout=0.5,
                 )
                 if response.status_code == 200:
                     working_proxy.append(proxy)
+                    logger.info(len(working_proxy))
+                if len(working_proxy) == 20:
+                    break
             except Exception as e:
                 logger.info(f"ERROR ON {proxy}: {e}")
                 continue
+
         if not working_proxy:
             logger.info("NO PROXY IS WORKING")
         logger.info(f"WORKING PROXY {working_proxy}")
@@ -707,8 +724,8 @@ if __name__ == "__main__":
     # conn._scrape_profile_id()
     # scrape profile id
     # conn._get_proxy_list()
-    # profile_id = conn._get_profile_id()
-    result = conn._process_scrapped_profile()
+    profile_id = conn._get_profile_id()
+    # result = conn._process_scrapped_profile()
 
     # xxx = conn._scrape_profile("https://www.linkedin.com/in/kaitki-agarwal-4685942")
     # xxx = conn._scrape_profile("https://www.linkedin.com/in/charles-taylor-01765421")
