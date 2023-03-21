@@ -24,6 +24,7 @@ import random
 from fake_useragent import UserAgent
 
 CREDS = {"username": "jhordy@delman.io", "password": "delman12"}
+# {"username": "ph.rk.h.rap.hr@gmail.com", "password": "delman12"}
 # {"username": "jhoewong49@gmail.com", "password": "ikacantik2302"}
 # {"username": "jhordy@delman.io", "password": "delman12"}
 LI_AT = "AQEDARJHdUsDsmjOAAABhu9sjrIAAAGHE3kSslYAT4cmcKMgSJ3KCzX8AmIpWhbsuTKzy4_LHBHpnz8FpW3MNCQ4WR1oLUXJH2D66eQ87Aq50Bf9eBayxg3I8JVx8XDIuIc4zviLbv_ycnhIoNproVrT"
@@ -431,6 +432,13 @@ class LinkedinScraper:
             "https://www.linkedin.com/in/sumitkn",
             "https://www.linkedin.com/in/david-chou-51921a37/",
             "https://www.linkedin.com/in/shuey-robert-86167651",
+            "https://www.linkedin.com/in/xantanner/",
+            "http://www.linkedin.com/pub/david-carel/76/abb/270",
+            "https://www.linkedin.com/in/barrett-glasauer-91a8844a/",
+            "https://in.linkedin.com/in/amrita-jash-27358270",
+            "http://www.linkedin.com/pub/quinn-hu/61/417/641",
+            "http://www.linkedin.com/in/kirkgreen01",
+            "http://www.linkedin.com/in/carfreebrad",
         ]
         self.cursor.execute(f"SELECT * from ids where is_scrapped_profile=0")
         scrapped_id = self.cursor.fetchall()
@@ -455,8 +463,9 @@ class LinkedinScraper:
                 driver.quit()
             driver = Driver(uc=True, incognito=True, proxy=proxy)
             actions.login(
-                driver, self.username, self.password, timeout=300
+                driver, self.username, self.password, timeout=1000
             )  # if email and password isnt given, it'll prompt in terminal
+            sleep(0.5)
             for i in filtered_scrapped_id[:random_loop]:
                 linkedin_url = i["linkedin_url"]
                 # # skip scrapped urls
@@ -521,7 +530,7 @@ class LinkedinScraper:
                     i for i in scrapped_f if i["linkedin_url"] not in exclude
                 ]
                 logger.info(f"FILTER {filtered_scrapped_id[0]}")
-                random_loop = random.randint(3, 5)
+                random_loop = random.randint(4, 7)
                 sleep(0.2)
                 driver.quit()
 
@@ -596,15 +605,39 @@ class LinkedinScraper:
                     start_date_num = re.findall(r"\d+", start_date)
                     if duration_num:
                         end_date = int(start_date_num[0]) + int(duration_num[0])
-                        logger.info(f"ennd {end_date}")
                         period1 = str(start_date_num[0]) + " To " + str(end_date)
                 if period1:
                     check_period1_valid = re.findall(r"\d+", period1)
                     if not check_period1_valid:
                         period1 = None
+                company_name = exp.get("institution_name", None)
+                if company_name:
+                    company_name = company_name.replace("\n", " ").replace("\r", "")
+                    if "·" in company_name:
+                        # remove unwanted char
+                        company_name = company_name[: company_name.rfind("·")]
+                    # remove duplicate sub string
+                    com_name_in_list = company_name.split()
+                    company_name = " ".join(
+                        sorted(set(com_name_in_list), key=com_name_in_list.index)
+                    )
+                company_loc = exp.get("location", None)
+                if company_loc:
+                    is_num = re.findall(r"\d+", company_loc)
+                    if len(is_num) > 1:
+                        period1_n_duration = company_loc.split("·")
+                        if not period1 and not duration:
+                            period1 = period1_n_duration[0].strip().replace("Â", "")
+                            logger.info(f"PERIOD {period1}")
+                            duration = period1_n_duration[1].strip()
+                            logger.info(f"DUR {duration}")
+                            company_loc = None
+                    if company_loc:
+                        company_loc = company_loc[: company_loc.rfind("·")]
+
                 result = {
-                    "Company Name": exp.get("institution_name", None),
-                    "Company Location": exp.get("location", None),
+                    "Company Name": company_name,
+                    "Company Location": company_loc,
                     "Company URL": exp.get("linkedin_url", None),
                     "Position(Job Title)": exp.get("position_title", None),
                     "Period 1": period1,

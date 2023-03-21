@@ -7,6 +7,7 @@ from selenium.common.exceptions import NoSuchElementException
 from .objects import Experience, Education, Scraper, Interest, Accomplishment, Contact
 import os
 from linkedin_scraper import selectors
+from linkedin_scraper import actions
 import random
 
 
@@ -59,9 +60,11 @@ class Person(Scraper):
                 driver = webdriver.Chrome()
 
         if get:
+            # self.wait(random.randint(3, 5))
             driver.get(linkedin_url)
             current_url = driver.current_url
             self.linkedin_url = current_url[: current_url.rfind("/")]
+            print(self.linkedin_url)
             # self.linkedin_url = self.linkedin_url[: self.linkedin_url.rfind("/")]
 
         self.driver = driver
@@ -94,6 +97,7 @@ class Person(Scraper):
         if self.is_signed_in():
             self.scrape_logged_in(close_on_complete=close_on_complete)
         else:
+            # actions.login(self.driver, "jhordy@delman.io", "delman12")
             print("you are not logged in!")
 
     def _click_see_more_by_class_name(self, class_name):
@@ -116,17 +120,37 @@ class Person(Scraper):
 
     def get_experiences(self):
         url = os.path.join(self.linkedin_url, "details/experience")
+        print(self.linkedin_url)
+        print(url)
         self.driver.get(url)
         self.focus()
         main = self.wait_for_element_to_load(by=By.ID, name="main")
         self.scroll_to_half()
         self.scroll_to_bottom()
         main_list = self.wait_for_element_to_load(name="pvs-list", base=main)
+        # try:
+        #     main_list = self.wait_for_element_to_load(name="pvs-list", base=main)
+        # except:
+        #     self.driver.get(url)
+        #     self.focus()
+        #     main = self.wait_for_element_to_load(by=By.ID, name="main")
+        #     self.scroll_to_half()
+        #     self.scroll_to_bottom()
+        #     main_list = self.wait_for_element_to_load(name="pvs-list", base=main)
         for position in main_list.find_elements(By.XPATH, "li"):
             try:
                 position = position.find_element(By.CLASS_NAME, "pvs-entity")
             except NoSuchElementException:
-                experience = []
+                experience = Experience(
+                    position_title=None,
+                    from_date=None,
+                    to_date=None,
+                    duration=None,
+                    location=None,
+                    description=None,
+                    institution_name=None,
+                    linkedin_url=None,
+                )
                 self.add_experience(experience)
                 break
             company_logo_elem, position_details = position.find_elements(By.XPATH, "*")
@@ -147,50 +171,9 @@ class Person(Scraper):
             outer_positions = position_summary_details.find_element(
                 By.XPATH, "*"
             ).find_elements(By.XPATH, "*")
-            print(outer_positions)
-            for i in outer_positions:
-                print(i.text)
-            # NEWWWW
-            # if len(outer_positions) == 2:
-            #     for position in main_list.find_elements(By.XPATH,"li"):
-            #         position = position.find_element(By.CLASS_NAME, "pvs-entity")
-            #         (
-            #             company_logo_elem,
-            #             position_details,
-            #         ) = position.find_elements(By.XPATH,"*")
-
-            #         # company elem
-            #         company_linkedin_url = company_logo_elem.find_element(By.XPATH,
-            #             "*"
-            #         ).get_attribute("href")
-
-            #         # position details
-            #         position_details_list = position_details.find_elements(By.XPATH,"*")
-            #         position_summary_details = (
-            #             position_details_list[0]
-            #             if len(position_details_list) > 0
-            #             else None
-            #         )
-            #         position_summary_text = (
-            #             position_details_list[1]
-            #             if len(position_details_list) > 1
-            #             else None
-            #         )
-            #         outer_positions = position_summary_details.find_element(By.XPATH,
-            #             "*"
-            #         ).find_elements(By.XPATH,"*")
-            #         for i in outer_positions:
-            #             position_title = (
-            #                 outer_positions[0]
-            #                 .find_element(By.TAG_NAME, "span")
-            #                 .find_element(By.TAG_NAME, "span")
-            #                 .text
-            #             )
-            #         company = outer_positions[1].find_element(By.TAG_NAME, "span").text
-            #         work_times = (
-            #             outer_positions[2].find_element(By.TAG_NAME, "span").text
-            #         )
-            #         location = outer_positions[3].find_element(By.TAG_NAME, "span").text
+            # print(outer_positions)
+            # for i in outer_positions:
+            #     print(i.text)
             if len(outer_positions) == 4:
                 position_title = (
                     outer_positions[0]
@@ -435,7 +418,7 @@ class Person(Scraper):
         driver.execute_script(
             "window.scrollTo(0, Math.ceil(document.body.scrollHeight/1.5));"
         )
-        self.wait(random.randint(1, 3))
+        self.wait(random.randint(3, 5))
         # get experience
         self.get_experiences()
         self.wait(random.randint(2, 4))
@@ -443,7 +426,6 @@ class Person(Scraper):
         # get education
         self.get_educations()
         self.wait(random.randint(1, 4))
-        driver.get(self.linkedin_url)
 
         # get interest
         # try:
