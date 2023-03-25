@@ -45,6 +45,9 @@ class Person(Scraper):
         self.also_viewed_urls = []
         self.contacts = contacts or []
         self.profile_picture = profile_picture
+        self.random_linkedin_urls = [
+            "https://www.linkedin.com/in/charles-tayler-aaaa66258/",
+        ]
 
         if driver is None:
             try:
@@ -60,11 +63,16 @@ class Person(Scraper):
                 driver = webdriver.Chrome()
 
         if get:
-            # self.wait(random.randint(3, 5))
+            self.wait(random.randint(3, 5))
+            driver.execute_script(
+                "window.scrollTo(0, Math.ceil(document.body.scrollHeight/5));"
+            )
+            driver.execute_script(
+                "window.scrollTo(0, Math.ceil(document.body.scrollHeight/1.5));"
+            )
             driver.get(linkedin_url)
             current_url = driver.current_url
             self.linkedin_url = current_url[: current_url.rfind("/")]
-            print(self.linkedin_url)
             # self.linkedin_url = self.linkedin_url[: self.linkedin_url.rfind("/")]
 
         self.driver = driver
@@ -95,6 +103,12 @@ class Person(Scraper):
 
     def scrape(self, close_on_complete=True):
         if self.is_signed_in():
+            self.driver.execute_script(
+                "window.scrollTo(0, Math.ceil(document.body.scrollHeight/5));"
+            )
+            self.driver.execute_script(
+                "window.scrollTo(0, Math.ceil(document.body.scrollHeight/1.5));"
+            )
             self.scrape_logged_in(close_on_complete=close_on_complete)
         else:
             # actions.login(self.driver, "jhordy@delman.io", "delman12")
@@ -120,8 +134,6 @@ class Person(Scraper):
 
     def get_experiences(self):
         url = os.path.join(self.linkedin_url, "details/experience")
-        print(self.linkedin_url)
-        print(url)
         self.driver.get(url)
         self.focus()
         main = self.wait_for_element_to_load(by=By.ID, name="main")
@@ -413,19 +425,19 @@ class Person(Scraper):
         # get about
         self.get_about()
         driver.execute_script(
-            "window.scrollTo(0, Math.ceil(document.body.scrollHeight/2));"
+            "window.scrollTo(0, Math.ceil(document.body.scrollHeight/5));"
         )
         driver.execute_script(
             "window.scrollTo(0, Math.ceil(document.body.scrollHeight/1.5));"
         )
-        self.wait(random.randint(3, 5))
+        # self.wait(random.randint(2, 3))
         # get experience
         self.get_experiences()
-        self.wait(random.randint(2, 4))
+        # self.wait(random.randint(2, 3))
 
         # get education
         self.get_educations()
-        self.wait(random.randint(1, 4))
+        # self.wait(random.randint(1, 3))
 
         # get interest
         # try:
@@ -482,7 +494,8 @@ class Person(Scraper):
         interest = None
         accomplishment = None
         connections = None
-
+        # driver.get("https://www.linkedin.com/feed/")
+        # self.wait(1)
         if close_on_complete:
             driver.quit()
 
