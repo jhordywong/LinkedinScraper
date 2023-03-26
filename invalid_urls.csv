@@ -2,7 +2,6 @@ organization_name,startup_uuid,founder_name,linkedin_url,is_scrapped,is_scrapped
 Socure,294b7d8a-e8ec-ef88-da4c-9d8764415e46,Johnny Ayers,http://www.linkedin.com/in/johnayers1,1,0
 Atlas,2beb8fa0-f13a-c796-6a16-3a2efc072d5b,Peter Li,https://www.linkedin.com/in/petercli89,1,0
 NeighborSchools,2c73f15d-79bd-4320-85d9-f3abb48edf86,Cedric McDougal,https://www.linkedin.com/in/cedric-mcdougal-he-him-2b99021a,1,0
-Opus Bank,2e25001f-efc8-ef4e-5dbb-6c5f040c3f2a,Dale L. Cheney,https://www.linkedin.com/in/dalecheney,1,0
 Opus Bank,2e25001f-efc8-ef4e-5dbb-6c5f040c3f2a,Stephen Gordon,https://www.linkedin.com/in/stephen-h-gordon-7740ab167,1,0
 LumiraDx,36481767-e428-9601-0b87-14d274c82eda,Sumit Nagpal,https://www.linkedin.com/in/sumitkn,1,0
 Shipwell,366d26c4-7589-58f3-451f-eb8b760c4964,David Chou,https://www.linkedin.com/in/david-chou-51921a37/,1,0
@@ -37,8 +36,6 @@ Almabase,7fb0f6f1-685b-cc63-f666-f123aa18b7ec,Srihari Maneru,http://in.linkedin.
 Plume Design,80c72b90-17e6-bc73-579d-4e12d9768bed,Sri Nathan,https://www.linkedin.com/in/nathansri1,1,0
 Givelify,81ef8e23-84bd-382e-0552-0f03e2a24da2,Tayo Ademuyiwa,https://www.linkedin.com/in/tayo-ademuyiwa-md-345923187,1,0
 Pavilion,8403a15c-8030-429b-6fa0-160cb606c1ab,Brendan Duhamel,http://www.linkedin.com/pub/brendan-duhamel/98/3b6/4ba,1,0
-Wahlburgers,86b33ed1-9482-ce6b-6558-f191c2f927a5,Mark Wahlberg,https://www.linkedin.com/in/mark-wahlberg-1a8424219,1,0
-ArborMetrix,89414218-f1a5-6dab-d780-dbd74196c4c9,John D. Birkmeyer,https://www.linkedin.com/in/john-birkmeyer-md-5413b038/,1,0
 Pinterest,8f83e283-e00b-8101-d79b-bf2dd6914d6e,Evan Sharp,https://www.linkedin.com/in/evsharp,1,0
 Fity Social Media,9d6e090e-1f1a-f3b2-6627-ed12ac96b71c,Matthew Pattoli,https://www.linkedin.com/in/matthewpattoli,1,0
 "ROBOTERRA, Inc",9e880aa5-4488-2755-fbb3-e9dd75222b59,Chen Bai,https://www.linkedin.com/in/bcmsbond/,1,0
@@ -49,7 +46,6 @@ Pave,a58bea81-faa3-5a29-b99c-ed112a9dde41,Matt Schulman,https://www.linkedin.com
 White Ops,a731e22b-7f9d-1bd1-97f1-51f6b105c441,Dan Kaminsky,http://www.linkedin.com/pub/dan-kaminsky/0/614/532,1,0
 AdmitSee,aa3a7eb2-7e83-4ca5-c975-643d8fbc0070,Lydia Fayal,https://www.linkedin.com/in/lydiafayal,1,0
 M8,ab42d91e-e6ec-b79e-90ca-03401311b3d2,Stephen Liu,http://www.linkedin.com/in/stephenchristopherliu,1,0
-Tentrr,ac11a5be-515c-dea0-e5ed-e13162afb1e7,Michael D'Agostino,https://www.linkedin.com/in/michaelbdagostino/,1,0
 GCR,b1722a89-20ff-0906-21e6-adb5243351c5,Vladimir Hruda,https://www.linkedin.com/in/vladimir-hruda-1939502/,1,0
 Optimus Ride,b17faa29-4d77-1608-e736-c8f54d0c6a48,Ramiro Almeida,https://www.linkedin.com/in/ramiro-almeida-7975b363,1,0
 Qwick,bcbfa05c-d216-4a0e-b34a-1902e77ca06e,Chris Loeffler,https://www.linkedin.com/in/chrisloefflerii,1,0
@@ -66,8 +62,6 @@ Rozzy Learning Company,d7041aa5-6f0d-571d-17c0-999426779b43,Jessica Gordon,https
 Sonatype,d81374d0-93ef-0bca-f0b6-df1574670866,Jason van Zyl,https://www.linkedin.com/in/jasonv2,1,0
 Dandelion Energy,db47fba5-1c8a-46ea-881b-2be8e7e359ef,Kathy Hannun,https://www.linkedin.com/in/cooperkathy/,1,0
 EverString,dc9bba83-4dae-4497-ee33-d8ed6c18937c,Vincent Yang,https://www.linkedin.com/in/vincentyangeverstring/,1,0
-Xcell Biosciences,e66356a4-b718-9a29-f58d-9717ad466ae1,Ilya Kupershmidt,https://www.linkedin.com/in/ilya-kupershmidt,1,0
-Xcell Biosciences,e66356a4-b718-9a29-f58d-9717ad466ae1,James Lim,https://www.linkedin.com/in/jameslim1,1,0
 Ascent Resources,e6e975a4-5980-45ed-b674-978a7e525ec3,Jennifer M. Grigsby,https://www.linkedin.com/in/jennifer-m-grigsby-cpa-cgma-mba-22320196/,1,0
 Securly,e7fa5e5b-61fe-5cff-3203-b0041ccfd5f4,Vinay Mahadik,https://www.linkedin.com/in/mahadikvinay/,1,0
 Alley,e8435cd1-3223-4b73-6abc-1298a6a5b724,Jonathan Kogan,https://linkedin.com/in/rpatools,1,0
@@ -75,9 +69,4 @@ Venmo,e8499ac5-4fc5-a3fb-2106-dce0d7d3c98c,Iqram Magdon-Ismail,https://www.linke
 Go Nimbly,ee3e26d4-c4fd-3011-6094-1273e4f6c79c,Jason Reichl,https://www.linkedin.com/in/jasonreichl/,1,0
 Go Nimbly,ee3e26d4-c4fd-3011-6094-1273e4f6c79c,Jennifer Igartua,https://www.linkedin.com/in/jennifer-igartua-a3aba016/,1,0
 Revolutionary Security,f02ec91b-1969-4a7e-a9cb-031b947a918d,Rick Cline,https://www.linkedin.com/in/richardcline,1,0
-Rival IQ,f8e81486-476e-5d09-c847-a52f2564ebb0,Seth Pollack,http://www.linkedin.com/in/sethpollack,1,0
-Rival IQ,f8e81486-476e-5d09-c847-a52f2564ebb0,T.A. McCann,https://www.linkedin.com/in/tamccann,1,0
 Figma,fecdc239-2d5b-8552-fb0e-a6a874e95678,Evan Wallace,https://www.linkedin.com/in/evan-wallace-781838118/,1,0
-Juno Therapeutics,ff429091-2166-c3b5-409d-6e779fee09f5,Hans Bishop,https://www.linkedin.com/in/hans-bishop-0509b37,1,0
-Juno Therapeutics,ff429091-2166-c3b5-409d-6e779fee09f5,Renier Brentjens,https://www.linkedin.com/in/renier-brentjens-b3b111b,1,0
-Linc Global,ff8f7e39-ce6d-13c8-68ec-c2a9e982d946,Edwin Evans,https://www.linkedin.com/in/edwinevans,1,0

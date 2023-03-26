@@ -33,7 +33,9 @@ import multiprocessing
 CREDS = {"username": "jhordy@delman.io", "password": "delman12"}
 # {"username": "ph.rk.h.rap.hr@gmail.com", "password": "delman12"}
 # {"username": "jhordy@delman.io", "password": "delman12"}
-username_list = ["izyklveeuy@bloheyz.com", "cu3yevow3l@zipcatfish.com"]
+username_list = [
+    "jhoewong49@gmail.com",
+]
 
 
 class LinkedinScraper:
@@ -46,9 +48,8 @@ class LinkedinScraper:
         self.password = CREDS["password"]
         self.uname = username_list
         self.num_of_worker = len(self.uname)
-        self.data = pd.read_excel("LinkedIn_RACollection_3045_RA.xlsx").to_dict(
-            "records"
-        )
+        self.data = pd.read_csv("Solo_RACollection.csv").to_dict("records")
+        # self.db_name = "linkedin_solo.db"
 
     def _db_engine(self):
         def dict_factory(cursor, row):
@@ -109,19 +110,8 @@ class LinkedinScraper:
         chrome_options = uc.ChromeOptions()
         return uc.Chrome(options=chrome_options)
 
-    def _get_linkedin_from_crunchbase(self, insert_raw_data=False):
-        if insert_raw_data:
-            # insert founders to DB
-            rows = [
-                (d["Organization Name"], d["startup_uuid"], founder, "empty", 0, 0)
-                for d in self.data
-                for founder in d["Founders"].split(", ")
-            ]
-            logger.info(rows)
-            self.cursor.executemany("INSERT INTO ids VALUES(?,?,?,?,?,?);", rows)
-            self.conn.commit()
-            logger.info("DONE UPLOADING RAW DATA")
-            return
+    def _get_linkedin_from_crunchbase(self):
+        self.conn, self.cursor = self._db_engine()
         # get scrapped id
         self.cursor.execute(f"SELECT * from ids where is_scrapped=1")
         scrapped_id = self.cursor.fetchall()
@@ -141,56 +131,30 @@ class LinkedinScraper:
         webcache_url = "https://webcache.googleusercontent.com/search?q=cache:"
         founder_details = []
 
-        # check unscrapped user
-        self.cursor.execute("SELECT * from ids where is_scrapped=0")
-        unscrapped_id = self.cursor.fetchall()
-        unscrapped_companies = [i["organization_name"] for i in unscrapped_id]
-        logger.info(list(set(unscrapped_companies)))
-        logger.info(len(unscrapped_id))
-
         # init session
         client = requests.Session()
         cookies = cookiejar_from_dict(
             {
-                "GOOGLE_ABUSE_EXEMPTION": "ID=6237f06690b38ef4:TM=1678848583:C=r:IP=139.193.66.215-:S=QbamS_Bpks8BydOmmGH7Ngw"
+                "GOOGLE_ABUSE_EXEMPTION": "ID=4054c68c6aa230f7:TM=1679746947:C=r:IP=139.193.66.215-:S=3MCFnoc1wscnuxJ84t5B5WU"
             }
         )
         google_abuse_url = ""
         for i in self.data:
             startup_id = i["startup_uuid"]
             # skip scrape if its already scrapped before
-            if startup_id in scrapped_startup_uuid:
+            if len(scrapped_startup_uuid) > 1 and startup_id in scrapped_startup_uuid:
                 continue
             organization_name = i["Organization Name"]
             # skip scrape on company with no linkedin founder
             if organization_name in [
-                "Circuit of The Americas",
-                "Real Estate Elevated",
-                "Adaptive US Inc.",
-                "Oseberg",
-                "POMCO",
-                "Constellation Pharmaceuticals",
-                "Postup",
-                "Bia",
-                "UZURV, LLC",
-                "Represent",
-                "Iterable",
-                "Bellhop",
-                "Vera",
-                "Skorpios Technologies",
-                "Headspace",
-                "Alloy Digital",
-                "Compound Photonics",
-                "Eldridge Industries",
-                "Hanger",
-                "Essential",
-                "SEM RPM",
-                "Beats Music",
-                "Sera Prognostics",
-                "TutorMe",
-                "BrideClick",
-                "Temboo",
-                "Simtek",
+                "12th Wonder",
+                "3-dB Networks",
+                "97 Display",
+                "Akyumen Technologies Corp.",
+                "ALECIA",
+                "All Def Digital",
+                "All Star Code",
+                "Alpha Connect",
             ]:
                 continue
             founder_details_raw = []
@@ -276,17 +240,174 @@ class LinkedinScraper:
             self.conn.commit()
             founder_details += processes_founder_details
 
+        # self.cursor.execute(f"SELECT * from ids where is_scrapped=1")
+        # scrapped_id = self.cursor.fetchall()
+        # logger.info(scrapped_id)
+        # unscrapped_companies = [i["organization_name"] for i in scrapped_id]
+
+    def _update_linkedin_url_json_scrapped_data(self):
+        self.conn, self.cursor = self._db_engine()
         self.cursor.execute(f"SELECT * from ids where is_scrapped=1")
         scrapped_id = self.cursor.fetchall()
-        logger.info(scrapped_id)
-        unscrapped_companies = [i["organization_name"] for i in scrapped_id]
+        file_name = "scrapped_linkedin_urls"
+        with open(f"{file_name}.json", "w") as f:
+            json.dump(scrapped_id, f)
 
-    def load(self, driver):
-        driver.execute_cdp_cmd("Network.enable", {})
-        with open(self.filename, mode="rb") as f:
-            for cookie in pickle.load(f):
-                driver.execute_cdp_cmd("Network.setCookie", cookie)
-        driver.execute_cdp_cmd("Network.disable", {})
+    def _linkedin_urls_worker(self, proxy, data_to_scrape):
+        # init session
+        client = requests.Session()
+        cookies = cookiejar_from_dict({"GOOGLE_ABUSE_EXEMPTION": ""})
+        google_abuse_url = ""
+        webcache_url = "https://webcache.googleusercontent.com/search?q=cache:"
+        founder_details = []
+        try:
+            for i in data_to_scrape:
+                startup_id = i["startup_uuid"]
+                organization_name = i["Organization Name"]
+                # skip scrape on company with no linkedin founder
+                if organization_name in [
+                    "12th Wonder",
+                    "3-dB Networks",
+                    "97 Display",
+                    "Akyumen Technologies Corp.",
+                    "ALECIA",
+                    "All Def Digital",
+                    "All Star Code",
+                    "Alpha Connect",
+                ]:
+                    continue
+                founder_details_raw = []
+                crunchbase_url = (
+                    webcache_url + i["Organization Name URL"] + google_abuse_url
+                )
+                html = client.get(
+                    crunchbase_url,
+                    cookies=cookies,
+                    proxies={"http": proxy, "https": proxy},
+                ).text
+                # Throe exception if captcha detected
+                if "About this page" in html:
+                    logger.info("CAPTCHA DETECTED")
+                    playsound("F:\KERJA\BOT\LinkedInScraper\LinkedinScraper\song.mp3",)
+                    file_name = uuid.uuid4()
+                    with open(f"linkedin_urls_{file_name}.json", "w") as f:
+                        logger.info(f"SAVING DATA TO {file_name}.json ")
+                        json.dump(founder_details, f)
+                    return f"linkedin_urls_{str(file_name)}"
+                logger.info(f"Scrapping {organization_name}")
+                soup = BeautifulSoup(html, "html.parser")
+                founders_list = []
+                for li in soup.select('li:-soup-contains("Founders")'):
+                    logger.info("MASUK 0 ")
+                    for a in li.select("a.link-accent[href]"):
+                        founder_url = (
+                            webcache_url
+                            + "https://www.crunchbase.com"
+                            + a["href"]
+                            + google_abuse_url
+                        )
+                        founder_html = client.get(
+                            founder_url,
+                            cookies=cookies,
+                            proxies={"http": proxy, "https": proxy},
+                        ).text
+                        sleep(3)
+                        if "About this page" in founder_html:
+                            logger.info("CAPTCHA DETECTED")
+                            playsound(
+                                "F:\KERJA\BOT\LinkedInScraper\LinkedinScraper\song.mp3",
+                            )
+                            file_name = uuid.uuid4()
+                            with open(f"linkedin_urls_{file_name}.json", "w") as f:
+                                logger.info(f"SAVING DATA TO {file_name}.json ")
+                                json.dump(founder_details, f)
+                            return f"linkedin_urls_{str(file_name)}"
+                        soup = BeautifulSoup(founder_html, "html.parser")
+                        founder_linkedin_url_list = []
+                        for li in soup.select('li:-soup-contains("View on LinkedIn")'):
+                            founders_list.append(a.text.strip())
+                            for a in li.select("a.link-accent[href]"):
+                                founder_linkedin_url = a["href"]
+                                founder_details_raw.append(
+                                    {
+                                        "organization_name": i["Organization Name"],
+                                        "startup_uuid": i["startup_uuid"],
+                                        "founder_name": founders_list,
+                                        "linkedin_url": founder_linkedin_url,
+                                        "is_scrapped": 1,
+                                        "is_scrapped_profile": 0,
+                                    }
+                                )
+                logger.info(f"FOUNDER DETAILS RAW {founder_details_raw}")
+                # drop duplicates name in founder_details
+                processes_founder_details = []
+                founder_names = set()
+                linkedin_urls = set()
+                for item in founder_details_raw:
+                    for name in item["founder_name"]:
+                        if (
+                            name not in founder_names
+                            and item["linkedin_url"] not in linkedin_urls
+                        ):
+                            processes_founder_details.append(
+                                {
+                                    "organization_name": item["organization_name"],
+                                    "startup_uuid": item["startup_uuid"],
+                                    "founder_name": name,
+                                    "linkedin_url": item["linkedin_url"],
+                                    "is_scrapped": item["is_scrapped"],
+                                    "is_scrapped_profile": item["is_scrapped_profile"],
+                                }
+                            )
+                            founder_names.add(name)
+                            linkedin_urls.add(item["linkedin_url"])
+                founder_details += processes_founder_details
+            # insert data to after scrapping linkedin URL
+            file_name = uuid.uuid4()
+            logger.info(f"FOUNDER DETAILS {founder_details}")
+            with open(f"linkedin_urls_{file_name}.json", "w") as f:
+                logger.info(f"SAVING DATA TO {file_name}.json ")
+                json.dump(founder_details, f)
+            return f"linkedin_urls_{str(file_name)}"
+        except Exception as e:
+            logger.info(e)
+            return None
+
+    def _scrape_linkedin_urls(self):
+        self.proxies = self._get_proxy_list()
+        with open("scrapped_linkedin_urls.json", "r") as f:
+            scrapped_id = json.load(f)
+        scrapped_startup_id = [i["startup_uuid"] for i in scrapped_id]
+        filtered_data = [
+            i for i in self.data if i["startup_uuid"] not in scrapped_startup_id
+        ]
+        batched_subList = self.batch_list_of_dict(filtered_data, 20)
+        # logger.info(f"BATCHED {batched_subList}")
+        with multiprocessing.Pool(processes=len(self.proxies)) as pool:
+            results = pool.starmap(
+                self._linkedin_urls_worker, zip(self.proxies, batched_subList)
+            )
+        return results
+
+    def _update_linkedin_url_db(self, file_names):
+        for file in file_names:
+            with open(f"{file}.json", "r") as f:
+                data = json.load(f)
+            rows = [
+                (
+                    d["organization_name"],
+                    d["startup_uuid"],
+                    d["founder_name"],
+                    d["linkedin_url"],
+                    1,
+                    0,
+                )
+                for d in data
+            ]
+            self.cursor.executemany("INSERT INTO ids VALUES(?,?,?,?,?,?);", rows)
+            self.conn.commit()
+            # Update latest data from DB to Json
+            self._update_linkedin_url_json_data()
 
     def _scrape_profile(self, linkedin_url: str, driver=None) -> dict:
         """Fetch data for a given LinkedIn profile.
@@ -505,7 +626,6 @@ class LinkedinScraper:
         self.conn, self.cursor = self._db_engine()
         self.cursor.execute("SELECT * from profiles_raw")
         scrapped_profile = self.cursor.fetchall()
-        f = open("data.json")
         results = []
         for i in scrapped_profile:
             base_result = []
@@ -692,7 +812,7 @@ class LinkedinScraper:
                 if response.status_code == 200:
                     working_proxy.append(proxy)
                     logger.info(len(working_proxy))
-                if len(working_proxy) == 20:
+                if len(working_proxy) == 5:
                     break
             except Exception as e:
                 logger.info(f"ERROR ON {proxy}: {e}")
@@ -705,11 +825,11 @@ class LinkedinScraper:
 
     def worker(self, proxy, username, filtered_scrapped_id):
         results = []
-        num_loops = 23
+        num_loops = 33
         # Create a new webdriver instance with the given proxy
         driver = Driver(uc=True, incognito=True, proxy=proxy)
         actions.login(
-            driver, username, "delman12", timeout=10000
+            driver, username, "ikacantik2302", timeout=10000
         )  # if email and password isnt given, it'll prompt in terminal
         # Loop your scrape function for num_loops iterations
         try:
@@ -735,13 +855,16 @@ class LinkedinScraper:
             with open(f"{file_name}.json", "w") as f:
                 logger.info(f"SAVING DATA TO {file_name}.json ")
                 json.dump(results, f)
+            driver.quit()
+            return file_name
         except Exception as e:
             logger.info(f"ERROR {e}")
             file_name = uuid.uuid4()
             logger.info(f"ERROR OCCURED SAVING DATA TO {file_name}.json")
             with open(f"{file_name}.json", "w") as f:
                 json.dump(results, f)
-        driver.quit()
+            driver.quit()
+            return file_name
 
     def _scrape_linkedin_profile(self, num_of_worker: int = None):
         self.proxies = self._get_proxy_list()
@@ -764,7 +887,8 @@ class LinkedinScraper:
             self.worker(proxy, username, profile)
 
         with multiprocessing.Pool(processes=len(proxies)) as pool:
-            pool.starmap(self.worker, zip(proxies, uname, batched_subList))
+            results = pool.starmap(self.worker, zip(proxies, uname, batched_subList))
+        return results
 
     def batch_list_of_dict(self, lst, batch_size=23):
         # Pad the list with empty dictionaries to make its length a multiple of the batch size
@@ -779,7 +903,19 @@ class LinkedinScraper:
 
         return batches
 
-    def _update_db_data(self, conn, cursor, file_names: List):
+    def _update_profile_json_data(self):
+        conn, cursor = ls._db_engine()
+        # Update latest data from DB to Json
+        cursor.execute(f"SELECT * from ids where is_scrapped_profile=0")
+        scrapped_id = cursor.fetchall()
+
+        filtered_scrapped_id = [i for i in scrapped_id]
+        file_name = "filtered_scrapped"
+        with open(f"{file_name}.json", "w") as f:
+            json.dump(filtered_scrapped_id, f)
+
+    def _update_profile_db_data(self, file_names: List):
+        conn, cursor = ls._db_engine()
         logger.info(f"UPDATING LATEST DATA TO DB....")
         for file in file_names:
             with open(f"{file}.json", "r") as f:
@@ -807,100 +943,8 @@ class LinkedinScraper:
             )
             conn.commit()
 
-            # Get latest data from DB
-            cursor.execute(f"SELECT * from ids where is_scrapped_profile=0")
-            scrapped_id = cursor.fetchall()
-
-            exclude = [
-                "http://www.linkedin.com/in/johnayers1",
-                "https://www.linkedin.com/in/petercli89",
-                "https://www.linkedin.com/in/cedric-mcdougal-he-him-2b99021a",
-                "https://www.linkedin.com/in/dalecheney",
-                "https://www.linkedin.com/in/stephen-h-gordon-7740ab167",
-                "https://www.linkedin.com/in/sumitkn",
-                "https://www.linkedin.com/in/david-chou-51921a37/",
-                "https://www.linkedin.com/in/shuey-robert-86167651",
-                "https://www.linkedin.com/in/xantanner/",
-                "http://www.linkedin.com/pub/david-carel/76/abb/270",
-                "https://www.linkedin.com/in/barrett-glasauer-91a8844a/",
-                "https://in.linkedin.com/in/amrita-jash-27358270",
-                "http://www.linkedin.com/pub/quinn-hu/61/417/641",
-                "http://www.linkedin.com/in/kirkgreen01",
-                "http://www.linkedin.com/in/carfreebrad",
-                "https://www.linkedin.com/in/khiladi-gurjar-732aaa178",
-                "https://www.linkedin.com/in/mike-la-monica-34562b27/",
-                "http://www.linkedin.com/in/jstnc",
-                "https://www.linkedin.com/in/eddie-reyes/",
-                "https://hr.linkedin.com/in/sandromur",
-                "https://www.linkedin.com/in/midge-seltzer-049b79ab/",
-                "https://linkedin.com/in/huntermckinley",
-                "https://www.linkedin.com/in/jtnelson1",
-                "http://www.linkedin.com/in/kumarshiv89",
-                "http://www.linkedin.com/in/scottswanson77",
-                "https://www.linkedin.com/in/martinstroka/",
-                "http://www.linkedin.com/in/bwanbo",
-                "https://www.linkedin.com/in/erika-jensen-06598260/",
-                "http://www.linkedin.com/in/cluefulsoftwareengineer",
-                "https://www.linkedin.com/in/jonathanmarsico",
-                "https://www.linkedin.com/in/ken-baker-758bbab/",
-                "https://www.linkedin.com/in/crescojoe/",
-                "https://www.linkedin.com/in/xeeton/",
-                "http://www.linkedin.com/in/casperisto",
-                "http://in.linkedin.com/in/sriharimaneru/en",
-                "https://www.linkedin.com/in/nathansri1",
-                "https://www.linkedin.com/in/tayo-ademuyiwa-md-345923187",
-                "http://www.linkedin.com/pub/brendan-duhamel/98/3b6/4ba",
-                "https://www.linkedin.com/in/mark-wahlberg-1a8424219",
-                "https://www.linkedin.com/in/john-birkmeyer-md-5413b038/",
-                "https://www.linkedin.com/in/evsharp",
-                "https://www.linkedin.com/in/matthewpattoli",
-                "https://www.linkedin.com/in/bcmsbond/",
-                "https://www.linkedin.com/in/entic/",
-                "https://www.linkedin.com/in/vinod-dham-b07a7935",
-                "http://www.linkedin.com/pub/evan-huang/44/6a1/99a",
-                "https://www.linkedin.com/in/matthew-schulman-15911861/",
-                "http://www.linkedin.com/pub/dan-kaminsky/0/614/532",
-                "https://www.linkedin.com/in/lydiafayal",
-                "http://www.linkedin.com/in/stephenchristopherliu",
-                "https://www.linkedin.com/in/michaelbdagostino/",
-                "https://www.linkedin.com/in/vladimir-hruda-1939502/",
-                "https://www.linkedin.com/in/ramiro-almeida-7975b363",
-                "https://www.linkedin.com/in/lscott3/",
-                "https://www.linkedin.com/in/chrisloefflerii",
-                "https://www.linkedin.com/in/peter-szulczewski-b711221",
-                "https://www.linkedin.com/in/vincentyangeverstring/",
-                "https://www.linkedin.com/in/james-smith-81b9766/",
-                "https://www.linkedin.com/in/jessica-gordon-43b03359/",
-                "https://www.linkedin.com/in/wrong9999999",
-                "https://sg.linkedin.com/pub/iris-sangalang-ramos/10/b45/678",
-                "http://www.linkedin.com/pub/tom-lorimor/5a/115/598",
-                "https://www.linkedin.com/in/richardcline",
-                "https://www.linkedin.com/in/ilya-kupershmidt",
-                "https://www.linkedin.com/in/sanjayjain/",
-                "https://www.linkedin.com/in/jameslim1",
-                "https://www.linkedin.com/in/catherine-baker-b1860365",
-                "https://www.linkedin.com/in/jennifer-igartua-a3aba016/",
-                "https://www.linkedin.com/in/jason-meltzer-6231932",
-                "https://www.linkedin.com/in/wencesc/",
-                "https://www.linkedin.com/in/wencesc/",
-                "https://www.linkedin.com/in/bradbao"
-                "https://www.linkedin.com/in/cooperkathy/",
-                "https://www.linkedin.com/in/jennifer-m-grigsby-cpa-cgma-mba-22320196/",
-                "https://www.linkedin.com/in/caencontee",
-                "https://linkedin.com/in/rpatools",
-                "https://www.linkedin.com/in/iqram-magdon-ismail-803511184/",
-                "http://www.linkedin.com/in/suneliot",
-                "https://www.linkedin.com/in/jasonv2",
-                "https://www.linkedin.com/in/cooperkathy/",
-                "https://www.linkedin.com/in/mahadikvinay/",
-                "https://www.linkedin.com/in/jasonreichl/",
-            ]
-            filtered_scrapped_id = [
-                i for i in scrapped_id if i["linkedin_url"] not in exclude
-            ]
-            file_name = "filtered_scrapped"
-            with open(f"{file_name}.json", "w") as f:
-                json.dump(filtered_scrapped_id, f)
+            # Update latest data from DB to Json
+            self._update_profile_json_data()
 
     def _get_invalid_url(self):
         conn, cursor = self._db_engine()
@@ -909,24 +953,101 @@ class LinkedinScraper:
         df = pd.DataFrame(scrapped_id)
         df.to_csv("invalid_urls.csv", index=False)
 
+    def _validate_scrape_results(self):
+        """Validate result by comparing the flag at table ids and data in profil_raw """
+
+        # get data from filtered csv
+        missing_data = pd.read_csv("missing.csv").to_dict("records")
+        # # get data from ids with unscrapped flag
+        conn, cursor = self._db_engine()
+        cursor.execute(f"SELECT * from ids where is_scrapped_profile=0")
+        invalid_urls = cursor.fetchall()
+        invalid_url_only = [i["linkedin_url"] for i in invalid_urls]
+
+        # filter out invalid urls from missing data
+        missing_data = [
+            i for i in missing_data if i["linkedin_url"] not in invalid_url_only
+        ]
+
+        # get data from profile_raw
+        cursor.execute(f"SELECT * from profiles_raw")
+        scrapped_profile = cursor.fetchall()
+
+        unscrapped_data = []
+        for i in missing_data:
+            if i["linkedin_url"] not in [x["linkedin_url"] for x in scrapped_profile]:
+                unscrapped_data.append(i)
+        # if not unscrapped_data:
+        #     logger.info("ALL DATA IS GOOD")
+        #     return
+
+        # file_names = file_names = [
+        #     "eaac2183-eedb-4081-b332-3986b5ea8674",
+        #     "9dc8c1e1-ff5b-4c22-a9b8-e6fb0979b40d",
+        # ]
+        # for file in file_names:
+        #     with open(f"{file}.json", "r") as f:
+        #         data = json.load(f)
+        #         unscrapped_data += data
+        logger.info(
+            f"FOUND {len(unscrapped_data)} MISSING DATA {unscrapped_data}, REUPDATING FLAG AT TABLE IDS"
+        )
+        # rows = [
+        #     (
+        #         d["Organization Name(Column A)"],
+        #         d["uuid (Column B)"],
+        #         d["Name from Column E"],
+        #         d["Linkedin Link"],
+        #         1,
+        #         0,
+        #     )
+        #     for d in unscrapped_data
+        # ]
+        rows = [
+            (
+                d["organization_name"],
+                d["startup_uuid"],
+                d["founder_name"],
+                d["linkedin_url"],
+                1,
+                0,
+            )
+            for d in unscrapped_data
+        ]
+        cursor.executemany("INSERT INTO ids VALUES(?,?,?,?,?,?);", rows)
+        conn.commit()
+
+        # update filtered_scrapped.json
+        file_name = "filtered_scrapped"
+        with open(f"{file_name}.json", "w") as f:
+            json.dump(unscrapped_data, f)
+        # close connection
+        conn.close()
+
+        # Scrape the unscrapped data
+        file_names = self._scrape_linkedin_profile()
+        self._update_profile_db_data(file_names)
+
 
 if __name__ == "__main__":
     ls = LinkedinScraper()
     # GET LINKEDIN URLS FROM CRUNCHBASE
     # ls._get_linkedin_from_crunchbase()
 
+    ls._update_linkedin_url_json_scrapped_data()
+    # file_names = ls._scrape_linkedin_urls()
+    # ls._update_linkedin_url_db()
+
     # SCRAPE PROFILE DETAILS WITHOUT MULTIPROCESSING
     # profile_id = ls._get_profile_id()
 
     # SCRAPE PROFILE DETAILS WITH MULTIPROCESSING
-    # ls._scrape_linkedin_profile()
+    # ls._update_profile_json_data()
+    # file_names = ls._scrape_linkedin_profile()
+    # ls._update_profile_db_data(file_names)
 
-    # UPDATE SCRAPED DATA INTO DB
-    # conn, cursor = ls._db_engine()
-    # file_names = [
-    #     "2450e1d1-da32-4d94-a4e6-73cd84652a72",
-    # ]
-    # ls._update_db_data(conn, cursor, file_names)
+    # VALIDATE SCRAPE RESULTS
+    # ls._validate_scrape_results()
 
     # SAVE PROCESSES DATA INTO CSV
     # ls._process_scrapped_profile()
