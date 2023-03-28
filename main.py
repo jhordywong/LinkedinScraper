@@ -30,13 +30,6 @@ from threading import Thread
 import uuid
 import multiprocessing
 
-CREDS = {"username": "jhordy@delman.io", "password": "delman12"}
-# {"username": "ph.rk.h.rap.hr@gmail.com", "password": "delman12"}
-# {"username": "jhordy@delman.io", "password": "delman12"}
-username_list = [
-    "jhoewong49@gmail.com",
-]
-
 
 class LinkedinScraper:
     def __init__(self):
@@ -46,7 +39,7 @@ class LinkedinScraper:
         )
         self.username = CREDS["username"]
         self.password = CREDS["password"]
-        self.uname = username_list
+        self.uname = self._get_accounts()
         self.num_of_worker = len(self.uname)
         self.data = pd.read_csv("Solo_RACollection.csv").to_dict("records")
         # self.db_name = "linkedin_solo.db"
@@ -707,7 +700,7 @@ class LinkedinScraper:
             period2 = "Still Working"
         return period1, period2
 
-    def _process_scrapped_profile(self):
+    def _process_scrapped_profile(self, file_name: str = "scrapped_profiles"):
         self.conn, self.cursor = self._db_engine()
         self.cursor.execute("SELECT * from profiles_raw")
         scrapped_profile = self.cursor.fetchall()
@@ -871,7 +864,7 @@ class LinkedinScraper:
             categories=ordered_company_name,
         )
         # df = df.sort_values("Organization Name(Column A)")
-        df.to_csv("scrapped_profiles.csv", index=False)
+        df.to_csv(f"{file_name}.csv", index=False)
         # write to csv
         # fields = list(results[0].keys())
         # self._save_to_csv(fields, results, "scrapped_profiles.csv")
@@ -882,19 +875,6 @@ class LinkedinScraper:
         with open(proxy_file) as f:
             for line in f:
                 proxies.append(line.strip())
-        # proxies = [
-        #     i
-        #     for i in proxies
-        #     if i.startswith("77")
-        #     and i
-        #     not in [
-        #         "77.83.25.111:8085",
-        #         "77.83.25.222:8085",
-        #         "77.83.26.229:8085",
-        #         "77.83.27.199:8085",
-        #         "77.243.89.33:8085",
-        #     ]
-        # ]
         working_proxy = []
         logger.info("CHECKING WORKING PROXIES")
         for proxy in proxies:
@@ -914,7 +894,7 @@ class LinkedinScraper:
                 if response.status_code == 200:
                     working_proxy.append(proxy)
                     logger.info(len(working_proxy))
-                if len(working_proxy) == 20:
+                if len(working_proxy) == len(self.uname):
                     break
             except Exception as e:
                 logger.info(f"ERROR ON {proxy}: {e}")
@@ -931,7 +911,7 @@ class LinkedinScraper:
         # Create a new webdriver instance with the given proxy
         driver = Driver(uc=True, incognito=True, proxy=proxy)
         actions.login(
-            driver, username, "ikacantik2302", timeout=10000
+            driver, username, "delman12", timeout=10000
         )  # if email and password isnt given, it'll prompt in terminal
         # Loop your scrape function for num_loops iterations
         try:
@@ -980,7 +960,7 @@ class LinkedinScraper:
         uname = self.uname
         with open("filtered_scrapped.json", "r") as f:
             filtered_scrapped_id = json.load(f)
-        batched_subList = self.batch_list_of_dict(filtered_scrapped_id, 33)
+        batched_subList = self.batch_list_of_dict(filtered_scrapped_id, 40)
         logger.info(len(batched_subList))
         logger.info(len(uname))
         logger.info(len(proxies))
@@ -1005,7 +985,8 @@ class LinkedinScraper:
 
         return batches
 
-    def _update_profile_json_data(self):
+    def _update_profile_json_data(self, close_conn=False):
+        logger.info(f"SAVING LATEST UNSCRAPPED DATA TO JSON")
         conn, cursor = ls._db_engine()
         # Update latest data from DB to Json
         cursor.execute(f"SELECT * from ids where is_scrapped_profile=0")
@@ -1016,6 +997,8 @@ class LinkedinScraper:
         with open(f"{file_name}.json", "w") as f:
             json.dump(filtered_scrapped_id, f)
         self.total_account_to_scrape = len(filtered_scrapped_id)
+        if close_conn:
+            conn.close()
 
     def _update_profile_db_data(self, file_names: List):
         conn, cursor = ls._db_engine()
@@ -1041,7 +1024,6 @@ class LinkedinScraper:
             ]
             cursor.executemany("INSERT INTO profiles_raw VALUES(?,?,?,?,?,?,?,?);", row)
             conn.commit()
-            sleep(0.3)
             url = [(1, i["Linkedin Link"]) for i in data]
             cursor.executemany(
                 "UPDATE ids SET is_scrapped_profile = ? WHERE linkedin_url = ?", url
@@ -1156,14 +1138,42 @@ class LinkedinScraper:
                 temp_set.add(d_str)
                 unique_dicts.append(d)
         df = pd.DataFrame(unique_dicts)
+        self.cursor.execute(f"DELETE FROM ids")
+        self.conn.commit()
+        rows = [
+            (
+                d["organization_name"],
+                d["startup_uuid"],
+                d["founder_name"],
+                d["linkedin_url"],
+                1,
+                0,
+            )
+            for d in unique_dicts
+        ]
+        self.cursor.executemany("INSERT INTO ids VALUES(?,?,?,?,?,?);", rows)
+        self.conn.commit()
         df.to_csv(f"{file_name}.csv", index=False)
         self.cursor.execute(f"SELECT * from ids where linkedin_url is NULL")
         scrapped_id = self.cursor.fetchall()
         df = pd.DataFrame(scrapped_id)
         df.to_csv(f"{invalid_company_file_name}.csv", index=False)
 
+    def _get_accounts(self):
+        acc_file = "accounts.txt"
+        accounts = []
+        with open(acc_file) as f:
+            for line in f:
+                accounts.append(line.strip())
+        return accounts
+
 
 if __name__ == "__main__":
+    CREDS = {"username": "jhordy@delman.io", "password": "delman12"}
+    # {"username": "ph.rk.h.rap.hr@gmail.com", "password": "delman12"}
+    username_list = [
+        "jhoewong49@gmail.com",
+    ]
     ls = LinkedinScraper()
     # GET LINKEDIN URLS FROM CRUNCHBASE
     # ls._get_linkedin_from_crunchbase()
@@ -1171,24 +1181,24 @@ if __name__ == "__main__":
     # ls._update_linkedin_url_json_scrapped_data()
     # file_names = ls._scrape_linkedin_urls()
     # ls._update_linkedin_url_db(file_names)
-    ls._save_scrapped_linkedin_urls(
-        file_name="scrapped_id_solo",
-        invalid_company_file_name="invalid_company_scrapped_id_solo",
-    )
+    # ls._save_scrapped_linkedin_urls(
+    #     file_name="scrapped_id_solo",
+    #     invalid_company_file_name="invalid_company_scrapped_id_solo",
+    # )
 
     # SCRAPE PROFILE DETAILS WITHOUT MULTIPROCESSING
     # profile_id = ls._get_profile_id()
 
     # SCRAPE PROFILE DETAILS WITH MULTIPROCESSING
-    # ls._update_profile_json_data()
-    # file_names = ls._scrape_linkedin_profile()
-    # ls._update_profile_db_data(file_names)
+    ls._update_profile_json_data(close_conn=True)
+    file_names = ls._scrape_linkedin_profile()
+    ls._update_profile_db_data(file_names)
 
     # VALIDATE SCRAPE RESULTS
     # ls._validate_scrape_results()
 
     # SAVE PROCESSES DATA INTO CSV
-    # ls._process_scrapped_profile()
+    # ls._process_scrapped_profile(file_name="scrapped_profiles_solo")
 
     # GET INVALID URLS
     # ls._get_invalid_url()
