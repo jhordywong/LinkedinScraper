@@ -58,7 +58,7 @@ class LinkedinScraper:
                 d[col[0]] = row[idx]
             return d
 
-        conn = sqlite3.connect("linkedin.db")
+        conn = sqlite3.connect("linkedin_solo.db")
         conn.row_factory = dict_factory
         cursor = conn.cursor()
         cursor.execute(
@@ -164,7 +164,7 @@ class LinkedinScraper:
             html = client.get(crunchbase_url, cookies=cookies).text
             # Throe exception if captcha detected
             if "About this page" in html:
-                playsound("F:\KERJA\BOT\LinkedInScraper\LinkedinScraper\song.mp3",)
+                # playsound("F:\KERJA\BOT\LinkedInScraper\LinkedinScraper\song.mp3",)
                 raise Exception("CAPTCHA DETECTED")
             logger.info(f"Scrapping {organization_name}")
             soup = BeautifulSoup(html, "html.parser")
@@ -180,9 +180,9 @@ class LinkedinScraper:
                     founder_html = client.get(founder_url, cookies=cookies).text
                     if "About this page" in founder_html:
                         logger.info("CAPTCHA DETECTED")
-                        playsound(
-                            "F:\KERJA\BOT\LinkedInScraper\LinkedinScraper\song.mp3",
-                        )
+                        # playsound(
+                        #     "F:\KERJA\BOT\LinkedInScraper\LinkedinScraper\song.mp3",
+                        # )
                         raise Exception("CAPTCHA DETECTED")
 
                     soup = BeautifulSoup(founder_html, "html.parser")
@@ -246,15 +246,19 @@ class LinkedinScraper:
         # unscrapped_companies = [i["organization_name"] for i in scrapped_id]
 
     def _update_linkedin_url_json_scrapped_data(self):
+        logger.info("UPDATING LINKEDIN_URLS JSON SCRAPPED DATA")
         self.conn, self.cursor = self._db_engine()
         self.cursor.execute(f"SELECT * from ids where is_scrapped=1")
         scrapped_id = self.cursor.fetchall()
         file_name = "scrapped_linkedin_urls"
         with open(f"{file_name}.json", "w") as f:
             json.dump(scrapped_id, f)
+        self.conn.close()
 
     def _linkedin_urls_worker(self, proxy, data_to_scrape):
         # init session
+        driver = Driver(uc=True, incognito=True, proxy=proxy)
+        timeout = 100000
         client = requests.Session()
         cookies = cookiejar_from_dict({"GOOGLE_ABUSE_EXEMPTION": ""})
         google_abuse_url = ""
@@ -262,105 +266,169 @@ class LinkedinScraper:
         founder_details = []
         try:
             for i in data_to_scrape:
-                startup_id = i["startup_uuid"]
+                if not i:
+                    continue
+                logger.info(i)
                 organization_name = i["Organization Name"]
                 # skip scrape on company with no linkedin founder
-                if organization_name in [
-                    "12th Wonder",
-                    "3-dB Networks",
-                    "97 Display",
-                    "Akyumen Technologies Corp.",
-                    "ALECIA",
-                    "All Def Digital",
-                    "All Star Code",
-                    "Alpha Connect",
-                ]:
-                    continue
+                # if organization_name in [
+                #     "12th Wonder",
+                #     "3-dB Networks",
+                #     "97 Display",
+                #     "Akyumen Technologies Corp.",
+                #     "ALECIA",
+                #     "All Def Digital",
+                #     "All Star Code",
+                #     "Alpha Connect",
+                #     # INVALID WEBCACHE COMPANY
+                #     "Auzmor, Inc",
+                #     "Broker Genius",
+                #     "Campaign Development Corp",
+                #     "Apollo Concepts",
+                #     "Faraday Future",
+                #     "Crowd PR",
+                #     "DropCar",
+                #     "IDLife",
+                #     "Applied Data Finance",
+                #     "Lowell Sun",
+                #     "Eligo Energy",
+                #     "Phytelligence",
+                #     "Elligo Health Research",
+                #     "HireKeep",
+                #     "Mindset Digital",
+                #     "Pattern",
+                #     "Worksmith",
+                #     "United By Blue",
+                #     "SOCIALDEALER",
+                # ]:
+                #     continue
                 founder_details_raw = []
                 crunchbase_url = (
                     webcache_url + i["Organization Name URL"] + google_abuse_url
                 )
-                html = client.get(
-                    crunchbase_url,
-                    cookies=cookies,
-                    proxies={"http": proxy, "https": proxy},
-                ).text
-                # Throe exception if captcha detected
-                if "About this page" in html:
-                    logger.info("CAPTCHA DETECTED")
-                    playsound("F:\KERJA\BOT\LinkedInScraper\LinkedinScraper\song.mp3",)
-                    file_name = uuid.uuid4()
-                    with open(f"linkedin_urls_{file_name}.json", "w") as f:
-                        logger.info(f"SAVING DATA TO {file_name}.json ")
-                        json.dump(founder_details, f)
-                    return f"linkedin_urls_{str(file_name)}"
-                logger.info(f"Scrapping {organization_name}")
-                soup = BeautifulSoup(html, "html.parser")
-                founders_list = []
-                for li in soup.select('li:-soup-contains("Founders")'):
-                    logger.info("MASUK 0 ")
-                    for a in li.select("a.link-accent[href]"):
-                        founder_url = (
-                            webcache_url
-                            + "https://www.crunchbase.com"
-                            + a["href"]
-                            + google_abuse_url
+                html = driver.get(crunchbase_url)
+                invalid_company = False
+                if (
+                    "Your client does not have permission to get URL"
+                    in driver.page_source
+                ):
+                    raise Exception(f"INVALID PROXIES WITH PROXY {proxy}")
+                # if "About this page" in driver.page_source:
+                #     logger.info(
+                #         f"CAPTCHA DETECTED AT COMPANY {organization_name} at {crunchbase_url}"
+                #     )
+                if (
+                    "was not found on this server"
+                    or "That’s all we know."
+                    or "That’s an error" in driver.page_source
+                ):
+                    logger.info(
+                        f"INVALID COMPANY URL{organization_name} at {crunchbase_url}"
+                    )
+                    invalid_company = True
+                if not invalid_company:
+                    # Wait element to solve captcha manually
+                    element = WebDriverWait(driver, timeout).until(
+                        EC.presence_of_element_located(
+                            (By.CLASS_NAME, "header-container")
                         )
-                        founder_html = client.get(
-                            founder_url,
-                            cookies=cookies,
-                            proxies={"http": proxy, "https": proxy},
-                        ).text
-                        sleep(3)
-                        if "About this page" in founder_html:
-                            logger.info("CAPTCHA DETECTED")
-                            playsound(
-                                "F:\KERJA\BOT\LinkedInScraper\LinkedinScraper\song.mp3",
+                    )
+                    html = driver.page_source
+                    logger.info(f"Scrapping {organization_name}")
+                    soup = BeautifulSoup(html, "html.parser")
+                    founders_list = []
+                    for li in soup.select('li:-soup-contains("Founders")'):
+                        for a in li.select("a.link-accent[href]"):
+                            founder_url = (
+                                webcache_url
+                                + "https://www.crunchbase.com"
+                                + a["href"]
+                                + google_abuse_url
                             )
-                            file_name = uuid.uuid4()
-                            with open(f"linkedin_urls_{file_name}.json", "w") as f:
-                                logger.info(f"SAVING DATA TO {file_name}.json ")
-                                json.dump(founder_details, f)
-                            return f"linkedin_urls_{str(file_name)}"
-                        soup = BeautifulSoup(founder_html, "html.parser")
-                        founder_linkedin_url_list = []
-                        for li in soup.select('li:-soup-contains("View on LinkedIn")'):
-                            founders_list.append(a.text.strip())
-                            for a in li.select("a.link-accent[href]"):
-                                founder_linkedin_url = a["href"]
-                                founder_details_raw.append(
+                            founder_html = driver.get(founder_url)
+                            if "About this page" in driver.page_source:
+                                logger.info(
+                                    f"CAPTCHA DETECTED AT COMPANY {invalid_company} at {crunchbase_url}"
+                                )
+                            elif "was not found on this server" in driver.page_source:
+                                logger.info(
+                                    f" INVALID FOUNDERS {founder_url} at company {organization_name}"
+                                )
+                                # continue to next founders if 1 founders is invalid
+                                continue
+                            element = WebDriverWait(driver, timeout).until(
+                                EC.presence_of_element_located(
+                                    (By.CLASS_NAME, "header-container")
+                                )
+                            )
+                            founder_html = driver.page_source
+                            soup = BeautifulSoup(founder_html, "html.parser")
+                            founder_linkedin_url_list = []
+                            for li in soup.select(
+                                'li:-soup-contains("View on LinkedIn")'
+                            ):
+                                founders_list.append(a.text.strip())
+                                for a in li.select("a.link-accent[href]"):
+                                    founder_linkedin_url = a["href"]
+                                    founder_details_raw.append(
+                                        {
+                                            "organization_name": i["Organization Name"],
+                                            "startup_uuid": i["startup_uuid"],
+                                            "founder_name": founders_list,
+                                            "linkedin_url": founder_linkedin_url,
+                                            "is_scrapped": 1,
+                                            "is_scrapped_profile": 0,
+                                        }
+                                    )
+                    logger.info(f"FOUNDER DETAILS RAW {founder_details_raw}")
+                    # drop duplicates name in founder_details
+                    processes_founder_details = []
+                    founder_names = set()
+                    linkedin_urls = set()
+                    for item in founder_details_raw:
+                        for name in item["founder_name"]:
+                            if (
+                                name not in founder_names
+                                and item["linkedin_url"] not in linkedin_urls
+                            ):
+                                processes_founder_details.append(
                                     {
-                                        "organization_name": i["Organization Name"],
-                                        "startup_uuid": i["startup_uuid"],
-                                        "founder_name": founders_list,
-                                        "linkedin_url": founder_linkedin_url,
-                                        "is_scrapped": 1,
-                                        "is_scrapped_profile": 0,
+                                        "organization_name": item["organization_name"],
+                                        "startup_uuid": item["startup_uuid"],
+                                        "founder_name": name,
+                                        "linkedin_url": item["linkedin_url"],
+                                        "is_scrapped": item["is_scrapped"],
+                                        "is_scrapped_profile": item[
+                                            "is_scrapped_profile"
+                                        ],
                                     }
                                 )
-                logger.info(f"FOUNDER DETAILS RAW {founder_details_raw}")
-                # drop duplicates name in founder_details
-                processes_founder_details = []
-                founder_names = set()
-                linkedin_urls = set()
-                for item in founder_details_raw:
-                    for name in item["founder_name"]:
-                        if (
-                            name not in founder_names
-                            and item["linkedin_url"] not in linkedin_urls
-                        ):
-                            processes_founder_details.append(
-                                {
-                                    "organization_name": item["organization_name"],
-                                    "startup_uuid": item["startup_uuid"],
-                                    "founder_name": name,
-                                    "linkedin_url": item["linkedin_url"],
-                                    "is_scrapped": item["is_scrapped"],
-                                    "is_scrapped_profile": item["is_scrapped_profile"],
-                                }
-                            )
-                            founder_names.add(name)
-                            linkedin_urls.add(item["linkedin_url"])
+                                founder_names.add(name)
+                                linkedin_urls.add(item["linkedin_url"])
+                    if not processes_founder_details:
+                        processes_founder_details.append(
+                            {
+                                "organization_name": i["Organization Name"],
+                                "startup_uuid": i.get("startup_uuid", None),
+                                "founder_name": None,
+                                "linkedin_url": None,
+                                "is_scrapped": 2,
+                                "is_scrapped_profile": 0,
+                            }
+                        )
+                # marks company with no founder's linkedin_url with 2
+                if invalid_company:
+                    processes_founder_details = [
+                        {
+                            "organization_name": i["Organization Name"],
+                            "startup_uuid": i.get("startup_uuid", None),
+                            "founder_name": None,
+                            "linkedin_url": None,
+                            "is_scrapped": 2,
+                            "is_scrapped_profile": 0,
+                        }
+                    ]
+                logger.info(f"process founder details {processes_founder_details}")
                 founder_details += processes_founder_details
             # insert data to after scrapping linkedin URL
             file_name = uuid.uuid4()
@@ -368,10 +436,17 @@ class LinkedinScraper:
             with open(f"linkedin_urls_{file_name}.json", "w") as f:
                 logger.info(f"SAVING DATA TO {file_name}.json ")
                 json.dump(founder_details, f)
-            return f"linkedin_urls_{str(file_name)}"
+            driver.quit()
+            return f"linkedin_urls_{file_name}.json"
         except Exception as e:
-            logger.info(e)
-            return None
+            file_name = uuid.uuid4()
+            with open(f"linkedin_urls_{file_name}.json", "w") as f:
+                logger.info(
+                    f"ERROR OCCURED SAVING DATA TO {file_name}.json WITH ERROR {e}"
+                )
+                json.dump(founder_details, f)
+            driver.quit()
+            return f"linkedin_urls_{file_name}.json"
 
     def _scrape_linkedin_urls(self):
         self.proxies = self._get_proxy_list()
@@ -381,18 +456,26 @@ class LinkedinScraper:
         filtered_data = [
             i for i in self.data if i["startup_uuid"] not in scrapped_startup_id
         ]
-        batched_subList = self.batch_list_of_dict(filtered_data, 20)
+        batched_subList = self.batch_list_of_dict(filtered_data, 5)
+        logger.info(f"DATA TO SCRAPE {len(filtered_data)}")
+        logger.info(f"LEN BATCH {len(batched_subList)}")
+        logger.info(f" LEN PROXY {len(self.proxies)}")
         # logger.info(f"BATCHED {batched_subList}")
         with multiprocessing.Pool(processes=len(self.proxies)) as pool:
             results = pool.starmap(
                 self._linkedin_urls_worker, zip(self.proxies, batched_subList)
             )
+        logger.info(results)
         return results
 
     def _update_linkedin_url_db(self, file_names):
+        logger.info("UPDATING DATA AT DB")
+        self.conn, self.cursor = self._db_engine()
+        total_data = 0
         for file in file_names:
-            with open(f"{file}.json", "r") as f:
+            with open(file, "r") as f:
                 data = json.load(f)
+            total_data += len(data)
             rows = [
                 (
                     d["organization_name"],
@@ -406,8 +489,10 @@ class LinkedinScraper:
             ]
             self.cursor.executemany("INSERT INTO ids VALUES(?,?,?,?,?,?);", rows)
             self.conn.commit()
-            # Update latest data from DB to Json
-            self._update_linkedin_url_json_data()
+        logger.info(f"TOTAL {total_data} scrapped")
+        # Update latest data from DB to Json
+        self._update_linkedin_url_json_scrapped_data()
+        self.conn.close()
 
     def _scrape_profile(self, linkedin_url: str, driver=None) -> dict:
         """Fetch data for a given LinkedIn profile.
@@ -797,12 +882,29 @@ class LinkedinScraper:
         with open(proxy_file) as f:
             for line in f:
                 proxies.append(line.strip())
+        # proxies = [
+        #     i
+        #     for i in proxies
+        #     if i.startswith("77")
+        #     and i
+        #     not in [
+        #         "77.83.25.111:8085",
+        #         "77.83.25.222:8085",
+        #         "77.83.26.229:8085",
+        #         "77.83.27.199:8085",
+        #         "77.243.89.33:8085",
+        #     ]
+        # ]
         working_proxy = []
         logger.info("CHECKING WORKING PROXIES")
         for proxy in proxies:
             try:
-                # skip chinese proxy
-                if proxy.startswith("45"):
+                # skip chinese/israel proxy
+                if (
+                    proxy.startswith("45")
+                    # or proxy.startswith("193")
+                    # or proxy.startswith("83")
+                ):
                     continue
                 response = requests.get(
                     "http://example.com",
@@ -812,7 +914,7 @@ class LinkedinScraper:
                 if response.status_code == 200:
                     working_proxy.append(proxy)
                     logger.info(len(working_proxy))
-                if len(working_proxy) == 5:
+                if len(working_proxy) == 20:
                     break
             except Exception as e:
                 logger.info(f"ERROR ON {proxy}: {e}")
@@ -913,13 +1015,16 @@ class LinkedinScraper:
         file_name = "filtered_scrapped"
         with open(f"{file_name}.json", "w") as f:
             json.dump(filtered_scrapped_id, f)
+        self.total_account_to_scrape = len(filtered_scrapped_id)
 
     def _update_profile_db_data(self, file_names: List):
         conn, cursor = ls._db_engine()
         logger.info(f"UPDATING LATEST DATA TO DB....")
+        total_scrapped = 0
         for file in file_names:
             with open(f"{file}.json", "r") as f:
                 data = json.load(f)
+            total_scrapped += len(data)
             # update scrapped data to DB
             row = [
                 (
@@ -945,6 +1050,9 @@ class LinkedinScraper:
 
             # Update latest data from DB to Json
             self._update_profile_json_data()
+        logger.info(
+            f"TOTAL ACC SCRAPPED {total_scrapped} REMAINING TO SCRAPE {self.total_account_to_scrape-total_scrapped}"
+        )
 
     def _get_invalid_url(self):
         conn, cursor = self._db_engine()
@@ -1028,15 +1136,45 @@ class LinkedinScraper:
         file_names = self._scrape_linkedin_profile()
         self._update_profile_db_data(file_names)
 
+    def _save_scrapped_linkedin_urls(
+        self, file_name: str, invalid_company_file_name: str
+    ):
+        logger.info("SAVING LATEST SCRAPPED LINKEDIN_URLS TO CSV")
+        self.conn, self.cursor = self._db_engine()
+        self.cursor.execute(
+            f"SELECT * from ids where is_scrapped=1 and linkedin_url is not NULL"
+        )
+        scrapped_id = self.cursor.fetchall()
+        # drop duplicates
+        temp_set = set()
+        # Create a new list of unique dictionaries using a for loop
+        unique_dicts = []
+        for d in scrapped_id:
+            # Convert the dictionary to a string and add it to the temporary set
+            d_str = str(sorted(d.items()))
+            if d_str not in temp_set:
+                temp_set.add(d_str)
+                unique_dicts.append(d)
+        df = pd.DataFrame(unique_dicts)
+        df.to_csv(f"{file_name}.csv", index=False)
+        self.cursor.execute(f"SELECT * from ids where linkedin_url is NULL")
+        scrapped_id = self.cursor.fetchall()
+        df = pd.DataFrame(scrapped_id)
+        df.to_csv(f"{invalid_company_file_name}.csv", index=False)
+
 
 if __name__ == "__main__":
     ls = LinkedinScraper()
     # GET LINKEDIN URLS FROM CRUNCHBASE
     # ls._get_linkedin_from_crunchbase()
-
-    ls._update_linkedin_url_json_scrapped_data()
+    # GET LINKEDIN URLS FROM CRUNCHBASE WITH MP
+    # ls._update_linkedin_url_json_scrapped_data()
     # file_names = ls._scrape_linkedin_urls()
-    # ls._update_linkedin_url_db()
+    # ls._update_linkedin_url_db(file_names)
+    ls._save_scrapped_linkedin_urls(
+        file_name="scrapped_id_solo",
+        invalid_company_file_name="invalid_company_scrapped_id_solo",
+    )
 
     # SCRAPE PROFILE DETAILS WITHOUT MULTIPROCESSING
     # profile_id = ls._get_profile_id()
