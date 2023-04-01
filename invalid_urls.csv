@@ -1,72 +1,82 @@
 organization_name,startup_uuid,founder_name,linkedin_url,is_scrapped,is_scrapped_profile
-Socure,294b7d8a-e8ec-ef88-da4c-9d8764415e46,Johnny Ayers,http://www.linkedin.com/in/johnayers1,1,0
-Atlas,2beb8fa0-f13a-c796-6a16-3a2efc072d5b,Peter Li,https://www.linkedin.com/in/petercli89,1,0
-NeighborSchools,2c73f15d-79bd-4320-85d9-f3abb48edf86,Cedric McDougal,https://www.linkedin.com/in/cedric-mcdougal-he-him-2b99021a,1,0
-Opus Bank,2e25001f-efc8-ef4e-5dbb-6c5f040c3f2a,Stephen Gordon,https://www.linkedin.com/in/stephen-h-gordon-7740ab167,1,0
-LumiraDx,36481767-e428-9601-0b87-14d274c82eda,Sumit Nagpal,https://www.linkedin.com/in/sumitkn,1,0
-Shipwell,366d26c4-7589-58f3-451f-eb8b760c4964,David Chou,https://www.linkedin.com/in/david-chou-51921a37/,1,0
-leadPops,36ba4672-9a2a-9961-dadc-6ce50cbfd385,Robert Shuey,https://www.linkedin.com/in/shuey-robert-86167651,1,0
-Panorama Education,3dd712f8-0f6d-2a6e-a007-4f503cc823b0,Alexander Tanner,https://www.linkedin.com/in/xantanner/,1,0
-Panorama Education,3dd712f8-0f6d-2a6e-a007-4f503cc823b0,David Carel,http://www.linkedin.com/pub/david-carel/76/abb/270,1,0
-WanderJaunt,3fe1f92a-3969-59d0-148c-9d73ad9af3fb,Barrett Glasauer,https://www.linkedin.com/in/barrett-glasauer-91a8844a/,1,0
-IndraStra Global,41079401-21eb-247a-40bc-330f77eb6331,Amrita Jash,https://in.linkedin.com/in/amrita-jash-27358270,1,0
-Distractify,41307c5b-b3e6-6cb1-2ebb-353fa64cd079,Quinn Hu,http://www.linkedin.com/pub/quinn-hu/61/417/641,1,0
-Stryde,4168ae05-1743-b7d7-03d9-947d420f0cce,Kirk Green,http://www.linkedin.com/in/kirkgreen01,1,0
-Freight Farms,4447ccfe-311d-3487-06c5-427bfb7b2df5,Brad McNamara,http://www.linkedin.com/in/carfreebrad,1,0
-The Daily Caller,4a5be90d-fb3b-9fa5-9a4d-626ba24cf7e5,khiladi poswal,https://www.linkedin.com/in/khiladi-gurjar-732aaa178,1,0
-Clickdaily,4be266d6-35c2-0237-891a-ebf66ad1f9a3,Michael LaMonica,https://www.linkedin.com/in/mike-la-monica-34562b27/,1,0
-Shape Security,4dd0c258-edc0-795c-905a-024aba9668ec,Justin Call,http://www.linkedin.com/in/jstnc,1,0
-Buoy Health,502542b2-2779-f701-7e1c-521ca5711b8b,Eddie Reyes,https://www.linkedin.com/in/eddie-reyes/,1,0
-Bellabeat,5a690501-7235-c64c-f7f6-46633f697ad5,Sandro Mur,https://hr.linkedin.com/in/sandromur,1,0
-Engage PEO,5b2fab72-0d83-417f-abd4-e6fff0db9ea2,Midge Seltzer,https://www.linkedin.com/in/midge-seltzer-049b79ab/,1,0
-YAC,5c0b8319-5334-45b8-baa2-dad7b289180e,Hunter McKinley,https://linkedin.com/in/huntermckinley,1,0
-Blavity,5df7b3c7-d0f4-2ff1-b7ad-74c67706cd2f,Jeff Nelson,https://www.linkedin.com/in/jtnelson1,1,0
-Walinns Innovation,5f87cad3-f70e-4f46-ba1c-2047bf289dd4,Shiva Kumar,http://www.linkedin.com/in/kumarshiv89,1,0
-Aki Technologies,5fcf9aa8-7707-6e5f-ca80-2e84325f86c0,Scott Swanson,http://www.linkedin.com/in/scottswanson77,1,0
-F50,644a9de4-9318-bcb2-9591-6f20a6af36e8,Martin Stroka,https://www.linkedin.com/in/martinstroka/,1,0
-Workgeni.us,6586b979-e619-cf7f-9a6d-59b6beb70bae,Bjorn Wanbo,http://www.linkedin.com/in/bwanbo,1,0
-The Flex Company,66c83332-9f60-7a3f-d209-42487feed121,Erika Jensen,https://www.linkedin.com/in/erika-jensen-06598260/,1,0
-Sosh,6777f600-d244-0bb9-84c9-ecf043dfa2d0,Rod Begbie,http://www.linkedin.com/in/cluefulsoftwareengineer,1,0
-Ship Sticks,684722a3-5ba2-4204-2453-1748b126c7bf,Jonathan Marsico,https://www.linkedin.com/in/jonathanmarsico,1,0
-Metric Theory,6cac9e1d-34ed-4948-95d9-94e3fa9ba65c,Ken Baker,https://www.linkedin.com/in/ken-baker-758bbab/,1,0
-Cresco Labs,70c12ec5-2e02-4c9e-3d9a-1b971689851a,Joe Caltabiano,https://www.linkedin.com/in/crescojoe/,1,0
-Phobio,73b861b1-ebf4-4f4d-a3d8-597d30ea5eab,Andrew Yeaton,https://www.linkedin.com/in/xeeton/,1,0
-Startup Grind,76520fb3-88fd-3780-c330-346ee795fa74,Casper Sermsuksan,http://www.linkedin.com/in/casperisto,1,0
-Almabase,7fb0f6f1-685b-cc63-f666-f123aa18b7ec,Srihari Maneru,http://in.linkedin.com/in/sriharimaneru/en,1,0
-Plume Design,80c72b90-17e6-bc73-579d-4e12d9768bed,Sri Nathan,https://www.linkedin.com/in/nathansri1,1,0
-Givelify,81ef8e23-84bd-382e-0552-0f03e2a24da2,Tayo Ademuyiwa,https://www.linkedin.com/in/tayo-ademuyiwa-md-345923187,1,0
-Pavilion,8403a15c-8030-429b-6fa0-160cb606c1ab,Brendan Duhamel,http://www.linkedin.com/pub/brendan-duhamel/98/3b6/4ba,1,0
-Pinterest,8f83e283-e00b-8101-d79b-bf2dd6914d6e,Evan Sharp,https://www.linkedin.com/in/evsharp,1,0
-Fity Social Media,9d6e090e-1f1a-f3b2-6627-ed12ac96b71c,Matthew Pattoli,https://www.linkedin.com/in/matthewpattoli,1,0
-"ROBOTERRA, Inc",9e880aa5-4488-2755-fbb3-e9dd75222b59,Chen Bai,https://www.linkedin.com/in/bcmsbond/,1,0
-Entic,a3554eac-143e-3931-6be9-5d64dd330566,Carlos Diaz,https://www.linkedin.com/in/entic/,1,0
-AcadGild,a4a51c28-fd19-2a99-38c1-ce188ae9bd16,Vinod K. Dham,https://www.linkedin.com/in/vinod-dham-b07a7935,1,0
-Onerent,a5092351-7e9b-1988-6283-3fea389ce2a2,Evan Huang,http://www.linkedin.com/pub/evan-huang/44/6a1/99a,1,0
-Pave,a58bea81-faa3-5a29-b99c-ed112a9dde41,Matt Schulman,https://www.linkedin.com/in/matthew-schulman-15911861/,1,0
-White Ops,a731e22b-7f9d-1bd1-97f1-51f6b105c441,Dan Kaminsky,http://www.linkedin.com/pub/dan-kaminsky/0/614/532,1,0
-AdmitSee,aa3a7eb2-7e83-4ca5-c975-643d8fbc0070,Lydia Fayal,https://www.linkedin.com/in/lydiafayal,1,0
-M8,ab42d91e-e6ec-b79e-90ca-03401311b3d2,Stephen Liu,http://www.linkedin.com/in/stephenchristopherliu,1,0
-GCR,b1722a89-20ff-0906-21e6-adb5243351c5,Vladimir Hruda,https://www.linkedin.com/in/vladimir-hruda-1939502/,1,0
-Optimus Ride,b17faa29-4d77-1608-e736-c8f54d0c6a48,Ramiro Almeida,https://www.linkedin.com/in/ramiro-almeida-7975b363,1,0
-Qwick,bcbfa05c-d216-4a0e-b34a-1902e77ca06e,Chris Loeffler,https://www.linkedin.com/in/chrisloefflerii,1,0
-Xapo,bd37bb60-a0a0-09f9-aa69-4d430de4028b,Thong Ngo,https://www.linkedin.com/in/wrong9999999,1,0
-Xapo,bd37bb60-a0a0-09f9-aa69-4d430de4028b,Wensceslao Casares,https://www.linkedin.com/in/wencesc/,1,0
-Justworks,be7f2ec1-4c98-1154-959a-f16b4c966470,Iris Ramos,https://sg.linkedin.com/pub/iris-sangalang-ramos/10/b45/678,1,0
-Pathmatics,bebc41c6-9f44-10ae-b530-0d83b24dfc8b,Tom Lorimor,http://www.linkedin.com/pub/tom-lorimor/5a/115/598,1,0
-Kloudless,c62134ad-7944-a775-14d5-b0f76c28eebc,Eliot Sun,http://www.linkedin.com/in/suneliot,1,0
-Mosaic451,cc2288e3-50c6-02b2-5753-fb346ca09598,Catherine Baker,https://www.linkedin.com/in/catherine-baker-b1860365,1,0
-Wish,cf4b5303-318a-312c-5944-65f05ad834e6,Peter Szulczewski,https://www.linkedin.com/in/peter-szulczewski-b711221,1,0
-ScriptDrop,d4c0e9ff-0e0e-f9da-f1c3-1618fc995a8f,Larry Scott,https://www.linkedin.com/in/lscott3/,1,0
-Webscale,d6dcbb68-659a-2a38-a18e-894e83026749,Jay Smith,https://www.linkedin.com/in/james-smith-81b9766/,1,0
-Rozzy Learning Company,d7041aa5-6f0d-571d-17c0-999426779b43,Jessica Gordon,https://www.linkedin.com/in/jessica-gordon-43b03359/,1,0
-Sonatype,d81374d0-93ef-0bca-f0b6-df1574670866,Jason van Zyl,https://www.linkedin.com/in/jasonv2,1,0
-Dandelion Energy,db47fba5-1c8a-46ea-881b-2be8e7e359ef,Kathy Hannun,https://www.linkedin.com/in/cooperkathy/,1,0
-EverString,dc9bba83-4dae-4497-ee33-d8ed6c18937c,Vincent Yang,https://www.linkedin.com/in/vincentyangeverstring/,1,0
-Ascent Resources,e6e975a4-5980-45ed-b674-978a7e525ec3,Jennifer M. Grigsby,https://www.linkedin.com/in/jennifer-m-grigsby-cpa-cgma-mba-22320196/,1,0
-Securly,e7fa5e5b-61fe-5cff-3203-b0041ccfd5f4,Vinay Mahadik,https://www.linkedin.com/in/mahadikvinay/,1,0
-Alley,e8435cd1-3223-4b73-6abc-1298a6a5b724,Jonathan Kogan,https://linkedin.com/in/rpatools,1,0
-Venmo,e8499ac5-4fc5-a3fb-2106-dce0d7d3c98c,Iqram Magdon-Ismail,https://www.linkedin.com/in/iqram-magdon-ismail-803511184/,1,0
-Go Nimbly,ee3e26d4-c4fd-3011-6094-1273e4f6c79c,Jason Reichl,https://www.linkedin.com/in/jasonreichl/,1,0
-Go Nimbly,ee3e26d4-c4fd-3011-6094-1273e4f6c79c,Jennifer Igartua,https://www.linkedin.com/in/jennifer-igartua-a3aba016/,1,0
-Revolutionary Security,f02ec91b-1969-4a7e-a9cb-031b947a918d,Rick Cline,https://www.linkedin.com/in/richardcline,1,0
-Figma,fecdc239-2d5b-8552-fb0e-a6a874e95678,Evan Wallace,https://www.linkedin.com/in/evan-wallace-781838118/,1,0
+Accountable Healthcare Staffing,ff26f317-7978-0ee7-e453-ab73e9c8f795,Robert Adamson,https://www.linkedin.com/in/robert-s-adamson-90420b135,1,0
+Accountingprose,c36ace75-a317-94c2-746c-289fd6f4bd36,Cristina Garza,https://www.linkedin.com/in/cristina-tina-garza-small-business-superhero-b5622124,1,0
+305 Fitness,bd29feb2-1ff8-2276-be5c-3f6d89484de9,Sadie Kurzban,https://www.linkedin.com/in/sadie-kurzban-we-re-hiring-73a56a18/,1,0
+BR√Ö¬í√É¬µVO Pay,1cba4133-cfd0-1d53-77b4-21cb49a28bf3,Maria Luna,https://www.linkedin.com/in/mlunaceobravopay/,1,0
+BR√¢¬â¬à√É¬≠√¢¬à¬ö√Ç¬µVO Pay,1cba4133-cfd0-1d53-77b4-21cb49a28bf3,Maria Luna,https://www.linkedin.com/in/mlunaceobravopay/,1,0
+Amind,24c22803-792d-5571-fbcc-46b307e1c824,Johanna Viklund,https://es.linkedin.com/pub/johanna-viklund/19/811/36b,1,0
+Bimpies,87d11767-294f-4759-bbd0-7ecb63509996,John Chang,https://www.linkedin.com/in/changjohn/,1,0
+blu eCigs,2eb730e3-f4c7-ab3f-9f0f-d6aa2125047d,Jason Healy,http://www.linkedin.com/pub/jason-healy/1/690/a8a/en,1,0
+"Blue Moon Digital, Inc.",8c980274-288d-23c0-237b-bb6741457491,Cindy Brown,https://www.linkedin.com/in/cindybrownbluemoondigital/,1,0
+Coastal Ridge Real Estate,4b33d3f7-bcfe-4393-96a7-474ec57e3e6c,Andrew Lallathin,https://www.linkedin.com/in/andrew-lallathin-b639163/,1,0
+Code Ninja,768a3dd5-bf02-ea7f-43d8-81ecdcc3d419,David Rice,https://www.linkedin.com/in/derice,1,0
+Defy Ventures,31011f80-8ab9-19bf-2d62-dd2e446a2a08,Catherine Hoke,http://www.linkedin.com/pub/catherine-hoke-rohr/33/357/29a,1,0
+Delivering Happiness,e318877e-383a-0ade-41cb-b284168beb5d,Jenn Lim,https://www.linkedin.com/in/jennlim,1,0
+Dojo,e0ce61ed-6d1f-738e-d9e8-2b8b8f00a222,Kelly Kampen,http://www.linkedin.com/in/kkampen,1,0
+Evelar Solar,fdf3cb97-b245-4e02-8d3a-ab845c91440c,Spencer Angerbauer,https://www.linkedin.com/in/spencerangerbauer/,1,0
+Caktus,8445c917-e76d-48ab-4f9e-3a903ea440dc,Panu Keski-Pukkila,http://www.linkedin.com/pub/panukeskipukkila,1,0
+GreenThumb,28d004df-7fed-9c03-a167-14ab8e2cc941,Mohammed W. Alshootfa,http://www.linkedin.com/in/alshootfa,1,0
+Growcentia,083f19a6-8bbe-fb4e-0a35-3eb68c46b674,Colin Bell,https://www.linkedin.com/in/colin-bell-phd-38734313,1,0
+Kissmetrics,c7a28547-3a5e-feb0-567f-ee7cba6bb948,khiladi poswal,https://www.linkedin.com/in/khiladi-gurjar-732aaa178,1,0
+cbanc Network,78fa0fcf-2f90-f688-a3a2-522fa3f83683,Myers Dupuy,https://www.linkedin.com/in/myersdupuy/,1,0
+Centro Global Solutions,3ef8bbfb-1958-498f-a118-38b1fcdad473,Sean Farag,https://www.linkedin.com/in/sean-farag-72b45559/,1,0
+ChannelMeter,2ed4edb3-bd7c-8cea-6871-9d68c20b3141,Eugene Lee,https://www.linkedin.com/in/mynameiseugene,1,0
+CustomersFirst Now,05000b13-c414-8923-2dc7-73cbae3bc1d8,Kerri K. Nelson,https://www.linkedin.com/in/kerri-k-nelson-47657b2/,1,0
+El Rey Network,5df85749-9b86-a3bb-9530-1ef77330d32d,Robert Anthony Rodriguez,https://www.linkedin.com/in/robertr-agroads,1,0
+HIRECLOUT,b35ba40b-fda6-fc30-1907-8bca145fff4c,Avetis Antaplyan,https://www.linkedin.com/in/yourpartnerrecruiteravetis,1,0
+Hook Agency,c1c5d3fa-efa3-4592-a2f7-b4bd4b8badb7,Tim Brown,https://www.linkedin.com/in/tim-brown-%F0%9F%8E%A3-3160bb35/,1,0
+HyreCar,5c8927ec-6aa3-c197-96e5-1a8d34ef143e,Abhishek Arora,https://www.linkedin.com/in/abhi-arora-70901bb7/,1,0
+Integem Inc.,a7f224c0-9d64-9d12-8ebc-ec95a81337ff,Eliza Yingzi Du,https://www.linkedin.com/in/dr-eliza-yingzi-du-5169007/,1,0
+IntellaTriage,d88b94cb-c97a-418b-acbc-795ffcf8f8e8,Suzi Meschbach,https://www.linkedin.com/in/suzi-meschbach-93b81b,1,0
+Practice Interactive DBA as Intiva Health,a13a76ff-7172-f444-1b51-928df89e8e0c,Alexander Candelario,https://www.linkedin.com/in/alexander-candelario-76b5566a/,1,0
+Juicero,c7b2eabf-23e2-f584-d2bc-be42ea47358f,Doug Evans,https://www.linkedin.com/in/juicero,1,0
+LevelUp,135b2272-9318-dc7f-9c82-5d6a5c7e73d9,Seth Priebatsch,https://www.linkedin.com/in/chiefninja,1,0
+Apptology,5a249cda-ff3b-4a41-733d-a7c83df108f3,Rich Foreman,https://www.linkedin.com/in/cordicocto/,1,0
+Armor,71d3c316-d9bc-7b83-2dd3-227f06c42989,Chris Drake,http://www.linkedin.com/in/chrisdraketx,1,0
+CultureIQ,a46a24a5-a7e7-7f90-1524-96e54eb9d21e,Greg Besner,http://www.linkedin.com/in/gregnyc,1,0
+goBalto,32fbcda0-fb63-fdf0-c233-d16fc008960e,Jae Chung,https://www.linkedin.com/in/gobalto,1,0
+LoyaltyPlant,ed250012-b5d1-9d42-daa9-65b4cba4db29,Vasilii Diachenko,https://ru.linkedin.com/in/vdv2013,1,0
+Lunera,735cf34d-3a15-0d31-c32f-1e0a96ebca60,Don Peifer,https://www.linkedin.com/pub/don-peifer/25/638/8aa,1,0
+Motivate Design,1f68c5fe-ef05-aad1-41c8-bb20b25e545b,Mona Patel,https://www.linkedin.com/in/motivatemonapatel,1,0
+NurseGrid,1aab61e9-d4d9-75a8-a8b4-bda2fa1eecbf,Joe Novello,https://www.linkedin.com/in/joe-novello-bsn-rn-b6225a3,1,0
+Nuvotronics,6a5bf291-4679-9f90-f4dd-cd4b73f7a91d,David Sherrer,https://www.linkedin.com/in/sherrer,1,0
+Office IQ,3284cfe8-8dca-959f-6cad-e6b4b86a45e3,Ray Wang,https://www.linkedin.com/in/raycornellwang,1,0
+OpenSponsorship,80da13da-b7d4-d5c9-9da2-1ee57958b0c8,Ishveen Anand,http://www.linkedin.com/in/ishveenanand,1,0
+Shiftsmart,cf59ba58-4687-4d0b-a396-0e3cd8849b6d,Aakash Kumar,https://www.linkedin.com/in/aakash-kumar-98327714/,1,0
+Stack Construction Technologies,2fa83929-2792-403a-984f-0c74d6ece2d2,Phil Ogilby,https://www.linkedin.com/in/phil-ogilby-b9141a,1,0
+Zoomdata,ab1e9063-6a2c-6735-7775-99631aec760b,Justin Langseth,http://www.linkedin.com/pub/justin-langseth/2/183/9a7,1,0
+SiO Digital,b75ad746-58a7-dde2-bcc5-98e8894e482a,Giovanni Letellier,https://www.linkedin.com/in/giovanni-letellier/,1,0
+Burner,eaf0d86b-4a94-433d-9e54-3e157bcb8cd7,Oke Okaro,https://www.linkedin.com/in/oke-okaro-41771/,1,0
+Filevine,c3238dfc-293f-45c0-abb7-5baaa3c00c0f,Jim Blake,https://www.linkedin.com/in/jim-blake-10a46615b/,1,0
+FinancialForce,76ca9c5a-61a4-1450-233b-0081c90f51d3,Debbie Ashton,http://uk.linkedin.com/pub/debbie-ashton/4/961/658,1,0
+Azran Financial,232f3184-b322-6de5-fe22-f9df4d3de06d,Joshua Azran,http://www.linkedin.com/in/jazran,1,0
+Midwest Elite Group,2552ae2c-c95b-cd18-b1e5-a84f05b5248f,Liz Morris,https://www.linkedin.com/in/elizabeth-morris-5ab23963,1,0
+NEST Fragrances,e3c48ae4-5322-7e1e-0dd1-ecf9622b4b4f,Laura Slatkin,https://www.linkedin.com/in/laura-slatkin-b307784b,1,0
+Medra Marketing,1eee0a48-642e-c65c-6432-4ac0bbd4f157,Ashley Castillo,https://www.linkedin.com/in/ashley-castillo-261a7569,1,0
+MobiDart,ef8c5b67-1ab5-1217-96d5-91e6b60b4ebc,Frank Rice,https://www.linkedin.com/in/frank-rice-0118851a,1,0
+Mobile Theory,a730241e-72c9-7d78-1911-008e835b76f4,Scott Swanson,http://www.linkedin.com/in/scottswanson77,1,0
+Narrativ,9e607ab5-10f0-95fc-abfc-2c1ee688fea0,Shirley Chen,https://www.linkedin.com/in/shrleychen/,1,0
+"Ranksharks, LLC",8e87e10f-534c-68ae-dddd-67a6d288b6c1,Travis Peters,https://www.linkedin.com/in/travispetersentrepreneur,1,0
+Nonda,f776bfcb-e7df-edfb-bb1c-8f0e843373a9,Jia Li,http://www.linkedin.com/in/baixingjia,1,0
+Powerupcloud Technologies,035a5b27-fc07-c927-3450-1c614ca4bb1b,Siva S,https://www.linkedin.com/in/surendirasiva/,1,0
+Recovery Centers of America,a9a26d0f-81c8-a90f-fdf3-eb88251a3729,Alexander Karnal,https://www.linkedin.com/in/alexanderkarnal/,1,0
+Rentah,b113868e-a6e7-44c1-4f46-2a21c842f65c,Anup Desai,https://www.linkedin.com/in/rentah/,1,0
+Reserved Barking,22c31227-c483-9dd1-0739-7283c18cbf3f,Bilal Malik,https://www.linkedin.com/in/mbm185,1,0
+Roomeze,a52b3322-845a-2a2b-c0e1-95e9684d4099,Jordan Davidovit,https://www.linkedin.com/in/jordan-davidovit-a2599580,1,0
+Stoop,9a3afa4c-f1ce-8f27-bb6f-876f36b1092a,Uri Maxima,https://www.linkedin.com/in/aumaxima,1,0
+Solera Health,7495c6eb-b4f5-a3b0-c7e7-75c042c4ef15,Brenda Schmidt,https://www.linkedin.com/in/brendaschmidtsolera,1,0
+Talentrackr,9f582a21-6820-e8c2-dc68-9355c0f69ef3,Paul Silverstein,https://www.linkedin.com/in/paulasilverstein,1,0
+Tatcha,2a432a4b-3395-fce6-8372-5347ba352f4b,Vicky Tsai,https://www.linkedin.com/in/vickytsai/,1,0
+Karma,859a7663-1488-4185-accf-4bd06c37d612,Karam Hinduja,https://www.linkedin.com/in/karamhinduja/,1,0
+Northwestern Marketing Concepts,beab7fab-1a7c-4105-b2ef-9c7cc7785d03,Holly Clark,https://www.linkedin.com/in/clarkholly/,1,0
+"Vaddo, Inc.",ec469853-4880-c5e4-917c-cd51eb7cba27,Ryan Caugherty,https://www.linkedin.com/in/ryan-caugherty,1,0
+Vera Whole Health,2c718ee4-a250-e338-8a25-8863e8030a22,Tom Norwood,https://www.linkedin.com/in/tom-n-4413415/,1,0
+WhiteFox Defense Technologies,88cf81ea-e989-637b-ebe3-1f1b0ae020c5,Luke Fox,https://www.linkedin.com/in/lukerfox/,1,0
+SpeachMe,7dc83475-ecf1-ff6a-1375-3e673f7e8c7c,Najette Fellache,https://www.linkedin.com/in/najette-fellache-6331b866,1,0
+Specright,81e862b5-2acf-cac4-b153-1fc22e8d63e4,Matthew Wright,https://www.linkedin.com/in/matthew-wright-17a58a121/,1,0
+TRELORA,9a938d75-fc6c-b3b5-7fc7-e1480b10a521,Joshua Hunt,https://www.linkedin.com/in/joshua-hunt-22377211/,1,0
+"UniBit, Inc.",694c7faf-caf7-45c8-8be3-815312f7add5,Vincent Jiang,https://www.linkedin.com/in/vincent-jiang-55740855/,1,0
+Wyre,101f0fb2-5382-f657-21f4-b3082c12fb78,Ioannis Giannaros,http://www.linkedin.com/in/ioannisgiannaros,1,0
+Trayvax,678cc576-184b-80e2-2d18-e1a54d5ad709,Mark King,https://www.linkedin.com/in/mark-king-9b96ab112/,1,0
+Crowd PR,7bf6f444-9167-a9ca-a18d-4071d4b0739f,Marie Stapleton,https://www.linkedin.com/in/crowd-pr-marie,1,0
+The Purple Carrot,c554e8ae-8753-c4b0-45a2-7d8e38c8d233,Andrew Levitt,https://www.linkedin.com/in/andrewnlevitt,1,0

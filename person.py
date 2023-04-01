@@ -63,16 +63,17 @@ class Person(Scraper):
                 driver = webdriver.Chrome()
 
         if get:
-            self.wait(random.randint(3, 5))
-            driver.execute_script(
-                "window.scrollTo(0, Math.ceil(document.body.scrollHeight/5));"
-            )
-            driver.execute_script(
-                "window.scrollTo(0, Math.ceil(document.body.scrollHeight/1.5));"
-            )
+            # self.wait(random.randint(3, 5))
+            # driver.execute_script(
+            #     "window.scrollTo(0, Math.ceil(document.body.scrollHeight/5));"
+            # )
+            # driver.execute_script(
+            #     "window.scrollTo(0, Math.ceil(document.body.scrollHeight/1.5));"
+            # )
             driver.get(linkedin_url)
             current_url = driver.current_url
             self.linkedin_url = current_url[: current_url.rfind("/")]
+            self.original_linkedin_url = linkedin_url
             # self.linkedin_url = self.linkedin_url[: self.linkedin_url.rfind("/")]
 
         self.driver = driver
@@ -111,8 +112,9 @@ class Person(Scraper):
             )
             self.scrape_logged_in(close_on_complete=close_on_complete)
         else:
-            # actions.login(self.driver, "jhordy@delman.io", "delman12")
-            print("you are not logged in!")
+            print(
+                f"you are not logged in! or user not found with url {self.original_linkedin_url}"
+            )
 
     def _click_see_more_by_class_name(self, class_name):
         try:
@@ -150,6 +152,7 @@ class Person(Scraper):
         #     self.scroll_to_bottom()
         #     main_list = self.wait_for_element_to_load(name="pvs-list", base=main)
         for position in main_list.find_elements(By.XPATH, "li"):
+            print("MASUK 0")
             try:
                 position = position.find_element(By.CLASS_NAME, "pvs-entity")
             except NoSuchElementException:
@@ -180,6 +183,8 @@ class Person(Scraper):
             position_summary_text = (
                 position_details_list[1] if len(position_details_list) > 1 else None
             )
+            print(f"POS {position_summary_text}")
+            print(position_summary_text.get_attribute("outerHTML"))
             outer_positions = position_summary_details.find_element(
                 By.XPATH, "*"
             ).find_elements(By.XPATH, "*")
@@ -239,6 +244,8 @@ class Person(Scraper):
                 from_date = " ".join(times.split(" ")[:1]) if times else ""
             if not to_date:
                 to_date = " ".join(times.split(" ")[2:]) if times else ""
+            print("MASUK 1")
+
             if (
                 position_summary_text
                 and len(
@@ -248,6 +255,8 @@ class Person(Scraper):
                 )
                 > 1
             ):
+                print("MASUK 3S")
+
                 descriptions = (
                     position_summary_text.find_element(By.CLASS_NAME, "pvs-list")
                     .find_element(By.CLASS_NAME, "pvs-list")
@@ -430,7 +439,6 @@ class Person(Scraper):
         driver.execute_script(
             "window.scrollTo(0, Math.ceil(document.body.scrollHeight/1.5));"
         )
-        # self.wait(random.randint(2, 3))
         # get experience
         self.get_experiences()
         # self.wait(random.randint(2, 3))

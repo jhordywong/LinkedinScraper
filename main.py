@@ -29,6 +29,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from threading import Thread
 import uuid
 import multiprocessing
+from datetime import datetime
 
 
 class LinkedinScraper:
@@ -41,8 +42,8 @@ class LinkedinScraper:
         self.password = CREDS["password"]
         self.uname = self._get_accounts()
         self.num_of_worker = len(self.uname)
-        self.data = pd.read_csv("Solo_RACollection.csv").to_dict("records")
-        # self.db_name = "linkedin_solo.db"
+        self.data = pd.read_csv(BASE_DATA).to_dict("records")
+        self.bypass_proxy = BYPASS_PROXY
 
     def _db_engine(self):
         def dict_factory(cursor, row):
@@ -51,7 +52,7 @@ class LinkedinScraper:
                 d[col[0]] = row[idx]
             return d
 
-        conn = sqlite3.connect("linkedin_solo.db")
+        conn = sqlite3.connect(DB_NAME)
         conn.row_factory = dict_factory
         cursor = conn.cursor()
         cursor.execute(
@@ -238,7 +239,7 @@ class LinkedinScraper:
         # logger.info(scrapped_id)
         # unscrapped_companies = [i["organization_name"] for i in scrapped_id]
 
-    def _update_linkedin_url_json_scrapped_data(self):
+    def _update_linkedin_url_json_scrapped_data(self, close_conn=False):
         logger.info("UPDATING LINKEDIN_URLS JSON SCRAPPED DATA")
         self.conn, self.cursor = self._db_engine()
         self.cursor.execute(f"SELECT * from ids where is_scrapped=1")
@@ -250,7 +251,11 @@ class LinkedinScraper:
 
     def _linkedin_urls_worker(self, proxy, data_to_scrape):
         # init session
-        driver = Driver(uc=True, incognito=True, proxy=proxy)
+        proxy = []
+        if not proxy:
+            driver = Driver(uc=True, incognito=True)
+        else:
+            driver = Driver(uc=True, incognito=True, proxy=proxy)
         timeout = 100000
         client = requests.Session()
         cookies = cookiejar_from_dict({"GOOGLE_ABUSE_EXEMPTION": ""})
@@ -310,15 +315,24 @@ class LinkedinScraper:
                 #     logger.info(
                 #         f"CAPTCHA DETECTED AT COMPANY {organization_name} at {crunchbase_url}"
                 #     )
-                if (
-                    "was not found on this server"
-                    or "That’s all we know."
-                    or "That’s an error" in driver.page_source
-                ):
+                title = driver.title
+                if title in "Error 404 (Not Found)!!1":
+                    # logger.info(driver.page_source)
+                    logger.info("MASUK")
                     logger.info(
                         f"INVALID COMPANY URL{organization_name} at {crunchbase_url}"
                     )
                     invalid_company = True
+                # try:
+                #     element = WebDriverWait(driver, timeout).until(
+                #         EC.presence_of_element_located(
+                #             (By.CLASS_NAME, "header-container")
+                #         )
+                #     )
+                #     if element:
+                #         invalid_company = False
+                # except Exception as e:
+                #     logger.info(f"ERROR REACHING {crunchbase_url}")
                 if not invalid_company:
                     # Wait element to solve captcha manually
                     element = WebDriverWait(driver, timeout).until(
@@ -373,7 +387,7 @@ class LinkedinScraper:
                                             "is_scrapped_profile": 0,
                                         }
                                     )
-                    logger.info(f"FOUNDER DETAILS RAW {founder_details_raw}")
+                    # logger.info(f"FOUNDER DETAILS RAW {founder_details_raw}")
                     # drop duplicates name in founder_details
                     processes_founder_details = []
                     founder_names = set()
@@ -449,16 +463,16 @@ class LinkedinScraper:
         filtered_data = [
             i for i in self.data if i["startup_uuid"] not in scrapped_startup_id
         ]
-        batched_subList = self.batch_list_of_dict(filtered_data, 5)
+        batched_subList = self.batch_list_of_dict(filtered_data, 50)
         logger.info(f"DATA TO SCRAPE {len(filtered_data)}")
         logger.info(f"LEN BATCH {len(batched_subList)}")
         logger.info(f" LEN PROXY {len(self.proxies)}")
+        self.proxies = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         # logger.info(f"BATCHED {batched_subList}")
-        with multiprocessing.Pool(processes=len(self.proxies)) as pool:
+        with multiprocessing.Pool(processes=10) as pool:
             results = pool.starmap(
                 self._linkedin_urls_worker, zip(self.proxies, batched_subList)
             )
-        logger.info(results)
         return results
 
     def _update_linkedin_url_db(self, file_names):
@@ -468,7 +482,8 @@ class LinkedinScraper:
         for file in file_names:
             with open(file, "r") as f:
                 data = json.load(f)
-            total_data += len(data)
+            startup_id = list(set([i["startup_uuid"] for i in data]))
+            total_data += len(startup_id)
             rows = [
                 (
                     d["organization_name"],
@@ -480,8 +495,13 @@ class LinkedinScraper:
                 )
                 for d in data
             ]
-            self.cursor.executemany("INSERT INTO ids VALUES(?,?,?,?,?,?);", rows)
-            self.conn.commit()
+            try:
+                self.cursor.executemany("INSERT INTO ids VALUES(?,?,?,?,?,?);", rows)
+                logger.info("2")
+                self.conn.commit()
+                logger.info("3")
+            except Exception as e:
+                logger.info(e)
         logger.info(f"TOTAL {total_data} scrapped")
         # Update latest data from DB to Json
         self._update_linkedin_url_json_scrapped_data()
@@ -495,7 +515,7 @@ class LinkedinScraper:
         :return: Profile data
         :rtype: dict
         """
-        # driver = uc.Chrome()
+        # driver = Driver()
         # actions.login(driver, self.username, self.password, timeout=30)
         sleep(0.5)
         person = Person(linkedin_url, driver=driver, scrape=False, contacts=[])
@@ -514,73 +534,18 @@ class LinkedinScraper:
             "educations": d["educations"],
             "profile_dp_link": d["profile_picture"],
         }
+        # logger.info(results)
+        # file_name = "recovery"
+        # with open(f"{file_name}.json", "w") as f:
+        #     json.dump(results, f)
         return results
 
     def _get_profile_id(self):
         self.proxies = self._get_proxy_list()
-        # people with invalid LinkedIn URL
-        exclude = [
-            "http://www.linkedin.com/in/johnayers1",
-            "https://www.linkedin.com/in/petercli89",
-            "https://www.linkedin.com/in/cedric-mcdougal-he-him-2b99021a",
-            "https://www.linkedin.com/in/dalecheney",
-            "https://www.linkedin.com/in/stephen-h-gordon-7740ab167",
-            "https://www.linkedin.com/in/sumitkn",
-            "https://www.linkedin.com/in/david-chou-51921a37/",
-            "https://www.linkedin.com/in/shuey-robert-86167651",
-            "https://www.linkedin.com/in/xantanner/",
-            "http://www.linkedin.com/pub/david-carel/76/abb/270",
-            "https://www.linkedin.com/in/barrett-glasauer-91a8844a/",
-            "https://in.linkedin.com/in/amrita-jash-27358270",
-            "http://www.linkedin.com/pub/quinn-hu/61/417/641",
-            "http://www.linkedin.com/in/kirkgreen01",
-            "http://www.linkedin.com/in/carfreebrad",
-            "https://www.linkedin.com/in/khiladi-gurjar-732aaa178",
-            "https://www.linkedin.com/in/mike-la-monica-34562b27/",
-            "http://www.linkedin.com/in/jstnc",
-            "https://www.linkedin.com/in/eddie-reyes/",
-            "https://hr.linkedin.com/in/sandromur",
-            "https://www.linkedin.com/in/midge-seltzer-049b79ab/",
-            "https://linkedin.com/in/huntermckinley",
-            "https://www.linkedin.com/in/jtnelson1",
-            "http://www.linkedin.com/in/kumarshiv89",
-            "http://www.linkedin.com/in/scottswanson77",
-            "https://www.linkedin.com/in/martinstroka/",
-            "http://www.linkedin.com/in/bwanbo",
-            "https://www.linkedin.com/in/erika-jensen-06598260/",
-            "http://www.linkedin.com/in/cluefulsoftwareengineer",
-            "https://www.linkedin.com/in/jonathanmarsico",
-            "https://www.linkedin.com/in/ken-baker-758bbab/",
-            "https://www.linkedin.com/in/crescojoe/",
-            "https://www.linkedin.com/in/xeeton/",
-            "http://www.linkedin.com/in/casperisto",
-            "http://in.linkedin.com/in/sriharimaneru/en",
-            "https://www.linkedin.com/in/nathansri1",
-            "https://www.linkedin.com/in/tayo-ademuyiwa-md-345923187",
-            "http://www.linkedin.com/pub/brendan-duhamel/98/3b6/4ba",
-            "https://www.linkedin.com/in/mark-wahlberg-1a8424219",
-            "https://www.linkedin.com/in/john-birkmeyer-md-5413b038/",
-            "https://www.linkedin.com/in/evsharp",
-            "https://www.linkedin.com/in/matthewpattoli",
-            "https://www.linkedin.com/in/bcmsbond/",
-            "https://www.linkedin.com/in/entic/",
-            "https://www.linkedin.com/in/vinod-dham-b07a7935",
-            "http://www.linkedin.com/pub/evan-huang/44/6a1/99a",
-            "https://www.linkedin.com/in/matthew-schulman-15911861/",
-            "http://www.linkedin.com/pub/dan-kaminsky/0/614/532",
-            "https://www.linkedin.com/in/lydiafayal",
-            "http://www.linkedin.com/in/stephenchristopherliu",
-            "https://www.linkedin.com/in/michaelbdagostino/",
-            "https://www.linkedin.com/in/vladimir-hruda-1939502/",
-            "https://www.linkedin.com/in/ramiro-almeida-7975b363",
-            "https://www.linkedin.com/",
-        ]
         # Get latest data from DB
         self.cursor.execute(f"SELECT * from ids where is_scrapped_profile=0")
         scrapped_id = self.cursor.fetchall()
-        filtered_scrapped_id = [
-            i for i in scrapped_id if i["linkedin_url"] not in exclude
-        ]
+        filtered_scrapped_id = [i for i in scrapped_id]
 
         # Create webdriver with first proxy in list
         self.proxies = self._get_proxy_list()
@@ -855,8 +820,8 @@ class LinkedinScraper:
         self.cursor.execute(
             f"SELECT organization_name from ids where is_scrapped_profile=1"
         )
-        scrapped_profile = self.cursor.fetchall()
-        ordered_company_name = [i["organization_name"] for i in scrapped_profile]
+        scrapped_profile = self.data
+        ordered_company_name = [i["Organization Name"] for i in scrapped_profile]
         ordered_company_name = list(set(ordered_company_name))
         df["Organization Name(Column A)"] = pd.Categorical(
             df["Organization Name(Column A)"],
@@ -865,57 +830,70 @@ class LinkedinScraper:
         )
         # df = df.sort_values("Organization Name(Column A)")
         df.to_csv(f"{file_name}.csv", index=False)
-        # write to csv
-        # fields = list(results[0].keys())
-        # self._save_to_csv(fields, results, "scrapped_profiles.csv")
 
     def _get_proxy_list(self):
-        proxy_file = "proxies.txt"
-        proxies = []
-        with open(proxy_file) as f:
-            for line in f:
-                proxies.append(line.strip())
-        working_proxy = []
-        logger.info("CHECKING WORKING PROXIES")
-        for proxy in proxies:
-            try:
-                # skip chinese/israel proxy
-                if (
-                    proxy.startswith("45")
-                    # or proxy.startswith("193")
-                    # or proxy.startswith("83")
-                ):
-                    continue
-                response = requests.get(
-                    "http://example.com",
-                    proxies={"http": proxy, "https": proxy},
-                    timeout=0.5,
-                )
-                if response.status_code == 200:
-                    working_proxy.append(proxy)
-                    logger.info(len(working_proxy))
-                if len(working_proxy) == len(self.uname):
-                    break
-            except Exception as e:
-                logger.info(f"ERROR ON {proxy}: {e}")
-                continue
+        # proxy_file = "proxies.txt"
+        # proxies = []
+        # with open(proxy_file) as f:
+        #     for line in f:
+        #         proxies.append(line.strip())
+        # working_proxy = []
+        # logger.info("CHECKING WORKING PROXIES")
+        # for proxy in proxies:
+        #     try:
+        #         # skip chinese/israel proxy
+        #         if (
+        #             proxy.startswith("45")
+        #             # or proxy.startswith("193")
+        #             # or proxy.startswith("83")
+        #         ):
+        #             continue
+        #         response = requests.get(
+        #             "http://example.com",
+        #             proxies={"http": proxy, "https": proxy},
+        #             timeout=0.5,
+        #         )
+        #         if response.status_code == 200:
+        #             working_proxy.append(proxy)
+        #             logger.info(len(working_proxy))
+        #         if len(working_proxy) == 10:
+        #             break
+        #     except Exception as e:
+        #         continue
 
-        if not working_proxy:
-            logger.info("NO PROXY IS WORKING")
-        logger.info(f"WORKING PROXY {working_proxy}")
-        return working_proxy
+        # if not working_proxy:
+        #     logger.info("NO PROXY IS WORKING")
+        # logger.info(f"WORKING PROXY {working_proxy}")
+        working_proxy = [
+            "167.235.157.207:8080",
+            "216.137.184.253:80",
+            "162.55.184.195:8080",
+            "168.119.155.246:8080",
+            "103.156.141.100:80",
+            "188.34.155.249:8080",
+            "5.78.94.65:8080",
+            "37.120.192.154:8080",
+            "178.33.3.163:8080",
+            "117.160.250.134:8080",
+        ]
+        return working_proxy[:1]
 
     def worker(self, proxy, username, filtered_scrapped_id):
+        if self.bypass_proxy:
+            proxy = []
+            driver = Driver(uc=True, incognito=True)
+        else:
+            driver = Driver(uc=True, incognito=True, proxy=proxy)
         results = []
-        num_loops = 33
         # Create a new webdriver instance with the given proxy
-        driver = Driver(uc=True, incognito=True, proxy=proxy)
         actions.login(
             driver, username, "delman12", timeout=10000
         )  # if email and password isnt given, it'll prompt in terminal
         # Loop your scrape function for num_loops iterations
         try:
-            for i in filtered_scrapped_id[:num_loops]:
+            for i in filtered_scrapped_id:
+                if not i:
+                    continue
                 linkedin_url = i["linkedin_url"]
                 logger.info(f"SCRAPPING {linkedin_url}")
                 id_details = self._scrape_profile(linkedin_url, driver)
@@ -960,14 +938,13 @@ class LinkedinScraper:
         uname = self.uname
         with open("filtered_scrapped.json", "r") as f:
             filtered_scrapped_id = json.load(f)
-        batched_subList = self.batch_list_of_dict(filtered_scrapped_id, 40)
+        batched_subList = self.batch_list_of_dict(filtered_scrapped_id, 30)
         logger.info(len(batched_subList))
         logger.info(len(uname))
         logger.info(len(proxies))
 
-        def process_worker(proxy, username, profile):
-            self.worker(proxy, username, profile)
-
+        if self.bypass_proxy:
+            proxies = [i for i in range(10)]
         with multiprocessing.Pool(processes=len(proxies)) as pool:
             results = pool.starmap(self.worker, zip(proxies, uname, batched_subList))
         return results
@@ -991,14 +968,22 @@ class LinkedinScraper:
         # Update latest data from DB to Json
         cursor.execute(f"SELECT * from ids where is_scrapped_profile=0")
         scrapped_id = cursor.fetchall()
-
-        filtered_scrapped_id = [i for i in scrapped_id]
+        file_name = "invalid_acc.txt"
+        exclude = []
+        with open(file_name) as f:
+            for line in f:
+                exclude.append(line.strip())
+        filtered_scrapped_id = [
+            i for i in scrapped_id if i["linkedin_url"] not in exclude
+        ]
+        # filtered_scrapped_id = pd.read_csv("NotCollected_Solo.csv").to_dict("records")
         file_name = "filtered_scrapped"
         with open(f"{file_name}.json", "w") as f:
             json.dump(filtered_scrapped_id, f)
         self.total_account_to_scrape = len(filtered_scrapped_id)
-        if close_conn:
-            conn.close()
+        logger.info(f"TOTAL DATA TO SCRAPE {self.total_account_to_scrape}")
+        # if close_conn:
+        #     conn.close()
 
     def _update_profile_db_data(self, file_names: List):
         conn, cursor = ls._db_engine()
@@ -1030,69 +1015,58 @@ class LinkedinScraper:
             )
             conn.commit()
 
-            # Update latest data from DB to Json
-            self._update_profile_json_data()
+        # Update latest data from DB to Json
+        self._update_profile_json_data()
         logger.info(
             f"TOTAL ACC SCRAPPED {total_scrapped} REMAINING TO SCRAPE {self.total_account_to_scrape-total_scrapped}"
         )
 
-    def _get_invalid_url(self):
+    def _get_invalid_url(self, file_name: str):
         conn, cursor = self._db_engine()
         cursor.execute(f"SELECT * from ids where is_scrapped_profile=0")
         scrapped_id = cursor.fetchall()
         df = pd.DataFrame(scrapped_id)
-        df.to_csv("invalid_urls.csv", index=False)
+        df.to_csv(f"{file_name}.csv", index=False)
 
     def _validate_scrape_results(self):
         """Validate result by comparing the flag at table ids and data in profil_raw """
-
-        # get data from filtered csv
-        missing_data = pd.read_csv("missing.csv").to_dict("records")
-        # # get data from ids with unscrapped flag
         conn, cursor = self._db_engine()
-        cursor.execute(f"SELECT * from ids where is_scrapped_profile=0")
-        invalid_urls = cursor.fetchall()
-        invalid_url_only = [i["linkedin_url"] for i in invalid_urls]
+        # get data from filtered csv
+        # missing_data = pd.read_csv("missing.csv").to_dict("records")
+        # # # get data from ids with unscrapped flag
+        # cursor.execute(f"SELECT * from ids where is_scrapped_profile=0")
+        # invalid_urls = cursor.fetchall()
+        # invalid_url_only = [i["linkedin_url"] for i in invalid_urls]
 
-        # filter out invalid urls from missing data
-        missing_data = [
-            i for i in missing_data if i["linkedin_url"] not in invalid_url_only
-        ]
+        # # filter out invalid urls from missing data
+        # missing_data = [
+        #     i for i in missing_data if i["linkedin_url"] not in invalid_url_only
+        # ]
 
+        # filter by scrapped profile
+        cursor.execute(f"SELECT * from ids where is_scrapped_profile=1")
+        scrapped_id_data = cursor.fetchall()
+        y = set(list([i["linkedin_url"] for i in scrapped_id_data]))
+        logger.info(len(y))
         # get data from profile_raw
         cursor.execute(f"SELECT * from profiles_raw")
         scrapped_profile = cursor.fetchall()
-
+        x = set(list([i["linkedin_url"] for i in scrapped_profile]))
+        logger.info(len(x))
         unscrapped_data = []
-        for i in missing_data:
-            if i["linkedin_url"] not in [x["linkedin_url"] for x in scrapped_profile]:
+        for i in scrapped_id_data:
+            if i["linkedin_url"] not in [
+                x["linkedin_url"] for x in scrapped_profile
+            ] and i["startup_uuid"] not in [
+                x["startup_uuid"] for x in scrapped_profile
+            ]:
                 unscrapped_data.append(i)
-        # if not unscrapped_data:
-        #     logger.info("ALL DATA IS GOOD")
-        #     return
-
-        # file_names = file_names = [
-        #     "eaac2183-eedb-4081-b332-3986b5ea8674",
-        #     "9dc8c1e1-ff5b-4c22-a9b8-e6fb0979b40d",
-        # ]
-        # for file in file_names:
-        #     with open(f"{file}.json", "r") as f:
-        #         data = json.load(f)
-        #         unscrapped_data += data
+        if not unscrapped_data:
+            logger.info("ALL DATA IS GOOD")
+            return
         logger.info(
             f"FOUND {len(unscrapped_data)} MISSING DATA {unscrapped_data}, REUPDATING FLAG AT TABLE IDS"
         )
-        # rows = [
-        #     (
-        #         d["Organization Name(Column A)"],
-        #         d["uuid (Column B)"],
-        #         d["Name from Column E"],
-        #         d["Linkedin Link"],
-        #         1,
-        #         0,
-        #     )
-        #     for d in unscrapped_data
-        # ]
         rows = [
             (
                 d["organization_name"],
@@ -1167,39 +1141,53 @@ class LinkedinScraper:
                 accounts.append(line.strip())
         return accounts
 
+    def _fix_solo(self):
+        conn, cursor = self._db_engine()
+        cursor.execute(f"SELECT * from profiles_raw")
+        scrapped_profile = cursor.fetchall()
+        rows = [(1, i["linkedin_url"]) for i in scrapped_profile]
+        cursor.executemany(
+            "UPDATE ids SET is_scrapped_profile = ? WHERE linkedin_url = ?", rows,
+        )
+        conn.commit()
+
 
 if __name__ == "__main__":
-    CREDS = {"username": "jhordy@delman.io", "password": "delman12"}
-    # {"username": "ph.rk.h.rap.hr@gmail.com", "password": "delman12"}
-    username_list = [
-        "jhoewong49@gmail.com",
-    ]
+    CREDS = {"username": "", "password": ""}
+    DB_NAME = "linkedin_nonspawn.db"
+    BASE_DATA = "NonSpawnedTeams_RACollection.csv"
+    BYPASS_PROXY = True
     ls = LinkedinScraper()
     # GET LINKEDIN URLS FROM CRUNCHBASE
     # ls._get_linkedin_from_crunchbase()
-    # GET LINKEDIN URLS FROM CRUNCHBASE WITH MP
-    # ls._update_linkedin_url_json_scrapped_data()
-    # file_names = ls._scrape_linkedin_urls()
-    # ls._update_linkedin_url_db(file_names)
-    # ls._save_scrapped_linkedin_urls(
-    #     file_name="scrapped_id_solo",
-    #     invalid_company_file_name="invalid_company_scrapped_id_solo",
-    # )
 
+    # GET LINKEDIN URLS FROM CRUNCHBASE WITH MP
+    ls._update_linkedin_url_json_scrapped_data(close_conn=True)
+    file_names = ls._scrape_linkedin_urls()
+    ls._update_linkedin_url_db(file_names)
+    ls._save_scrapped_linkedin_urls(
+        file_name="scrapped_id_nonspawn",
+        invalid_company_file_name="invalid_company_scrapped_id_nonspawn",
+    # )
     # SCRAPE PROFILE DETAILS WITHOUT MULTIPROCESSING
     # profile_id = ls._get_profile_id()
 
     # SCRAPE PROFILE DETAILS WITH MULTIPROCESSING
-    ls._update_profile_json_data(close_conn=True)
-    file_names = ls._scrape_linkedin_profile()
-    ls._update_profile_db_data(file_names)
+    # start = datetime.now()
+    # # ls._update_profile_json_data(close_conn=True)
+    # file_names = ls._scrape_linkedin_profile()
+    # ls._update_profile_db_data(file_names)
+    # end = datetime.now()
+    # logger.info(f"DUDRATIOOON {end-start}")
 
     # VALIDATE SCRAPE RESULTS
     # ls._validate_scrape_results()
+    # # ls._fix_solo()
 
-    # SAVE PROCESSES DATA INTO CSV
+    # # SAVE PROCESSES DATA INTO CSV
     # ls._process_scrapped_profile(file_name="scrapped_profiles_solo")
 
-    # GET INVALID URLS
-    # ls._get_invalid_url()
+    # # GET INVALID URLS
+    # ls._get_invalid_url("invalid_urls_solo")
+    # ls._scrape_profile("https://www.linkedin.com/in/vickytsai/")
 
