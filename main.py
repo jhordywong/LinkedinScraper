@@ -32,6 +32,9 @@ import multiprocessing
 from datetime import datetime
 import os
 from captcha_solver import click_checkbox, request_audio_version, solve_audio_captcha
+from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import NoSuchElementException
+import names
 
 
 class LinkedinScraper:
@@ -499,7 +502,9 @@ class LinkedinScraper:
         self._update_linkedin_url_json_scrapped_data()
         self.conn.close()
 
-    def _scrape_profile(self, linkedin_url: str, driver=None) -> dict:
+    def _scrape_profile(
+        self, linkedin_url: str, driver=None, solo_scrape: bool = False
+    ) -> dict:
         """Fetch data for a given LinkedIn profile.
 
         :param linkedin_url: LinkedIn URL for a profile
@@ -507,8 +512,9 @@ class LinkedinScraper:
         :return: Profile data
         :rtype: dict
         """
-        # driver = Driver()
-        # actions.login(driver, self.username, self.password, timeout=30)
+        if solo_scrape:
+            driver = Driver()
+            actions.login(driver, "cebhxyz5bp@gixenmixen.com", "delman12", timeout=30)
         sleep(0.5)
         person = Person(linkedin_url, driver=driver, scrape=False, contacts=[])
         person.scrape(close_on_complete=False)
@@ -829,34 +835,34 @@ class LinkedinScraper:
         with open(proxy_file) as f:
             for line in f:
                 proxies.append(line.strip())
-        # working_proxy = []
-        # logger.info("CHECKING WORKING PROXIES")
-        # for proxy in proxies:
-        #     try:
-        #         # skip chinese/israel proxy
-        #         if (
-        #             proxy.startswith("45")
-        #             # or proxy.startswith("193")
-        #             # or proxy.startswith("83")
-        #         ):
-        #             continue
-        #         response = requests.get(
-        #             "http://example.com",
-        #             proxies={"http": proxy, "https": proxy},
-        #             timeout=0.5,
-        #         )
-        #         if response.status_code == 200:
-        #             working_proxy.append(proxy)
-        #             logger.info(len(working_proxy))
-        #         if len(working_proxy) == 10:
-        #             break
-        #     except Exception as e:
-        #         continue
+        working_proxy = []
+        logger.info("CHECKING WORKING PROXIES")
+        for proxy in proxies:
+            try:
+                # skip chinese/israel proxy
+                if (
+                    proxy.startswith("45")
+                    # or proxy.startswith("193")
+                    # or proxy.startswith("83")
+                ):
+                    continue
+                response = requests.get(
+                    "http://example.com",
+                    proxies={"http": proxy, "https": proxy},
+                    timeout=0.5,
+                )
+                if response.status_code == 200:
+                    working_proxy.append(proxy)
+                    logger.info(len(working_proxy))
+                if len(working_proxy) == 10:
+                    break
+            except Exception as e:
+                continue
 
-        # if not working_proxy:
-        #     logger.info("NO PROXY IS WORKING")
-        # logger.info(f"WORKING PROXY {working_proxy}")
-        return proxies
+        if not working_proxy:
+            logger.info("NO PROXY IS WORKING")
+        logger.info(f"WORKING PROXY {working_proxy}")
+        return working_proxy
 
     def worker(self, proxy, username, filtered_scrapped_id):
         if self.bypass_proxy:
@@ -874,21 +880,32 @@ class LinkedinScraper:
             for idx, i in enumerate(filtered_scrapped_id):
                 if not i:
                     continue
+                # check is profile url is valid
                 linkedin_url = i["linkedin_url"]
                 logger.info(f"SCRAPPING {linkedin_url}")
                 id_details = self._scrape_profile(linkedin_url, driver)
                 if not id_details:
-                    continue
-                result = {
-                    "Organization Name(Column A)": i["organization_name"],
-                    "uuid (Column B)": i["startup_uuid"],
-                    "Name from Column E": i["founder_name"],
-                    "LinkedIn Name": id_details["name"],
-                    "experience": str(id_details["experiences"]),
-                    "education": str(id_details["educations"]),
-                    "Profile Image URL": id_details["profile_dp_link"],
-                    "Linkedin Link": i["linkedin_url"],
-                }
+                    result = {
+                        "Organization Name(Column A)": i["organization_name"],
+                        "uuid (Column B)": i["startup_uuid"],
+                        "Name from Column E": i["founder_name"],
+                        "LinkedIn Name": "INVALID URL",
+                        "experience": "INVALID URL",
+                        "education": "INVALID URL",
+                        "Profile Image URL": "INVALID URL",
+                        "Linkedin Link": i["linkedin_url"],
+                    }
+                else:
+                    result = {
+                        "Organization Name(Column A)": i["organization_name"],
+                        "uuid (Column B)": i["startup_uuid"],
+                        "Name from Column E": i["founder_name"],
+                        "LinkedIn Name": id_details["name"],
+                        "experience": str(id_details["experiences"]),
+                        "education": str(id_details["educations"]),
+                        "Profile Image URL": id_details["profile_dp_link"],
+                        "Linkedin Link": i["linkedin_url"],
+                    }
                 sleep(0.3)
                 results.append(result)
                 logger.info(
@@ -911,27 +928,24 @@ class LinkedinScraper:
             driver.quit()
             return file_name
 
-    def _scrape_linkedin_profile(self, batch_size=30, num_of_worker: int = 10):
-        self.proxies = self._get_proxy_list()
+    def _scrape_linkedin_profile(self, batch_size=30, num_of_worker: int = None):
         num_of_worker = num_of_worker or self.num_of_worker
-        # Create webdriver with first proxy in list
-        proxy_index = 0
-        proxies = self.proxies[:num_of_worker]
-        # Use proxies in rotation with each request
-        results = []
-        processes = []
-        uname = self.uname
         with open("filtered_scrapped.json", "r") as f:
             filtered_scrapped_id = json.load(f)
         batched_subList = self.batch_list_of_dict(filtered_scrapped_id, batch_size)
         logger.info(len(batched_subList))
-        logger.info(len(uname))
-        logger.info(len(proxies))
+        logger.info(len(self.uname))
 
         if self.bypass_proxy:
             proxies = [i for i in range(num_of_worker)]
+        else:
+            proxies = self._get_proxy_list()
+        logger.info(len(proxies))
+
         with multiprocessing.Pool(processes=len(proxies)) as pool:
-            results = pool.starmap(self.worker, zip(proxies, uname, batched_subList))
+            results = pool.starmap(
+                self.worker, zip(proxies, self.uname, batched_subList)
+            )
         return results
 
     def batch_list_of_dict(self, lst, batch_size=23):
@@ -946,6 +960,17 @@ class LinkedinScraper:
         ]
 
         return batches
+
+    def split_list(self, lst, num_sublists):
+        avg = len(lst) / num_sublists
+        result = []
+        last = 0.0
+
+        while last < len(lst):
+            result.append(lst[int(last) : int(last + avg)])
+            last += avg
+
+        return result
 
     def _update_profile_json_data(self, close_conn=False):
         logger.info(f"SAVING LATEST UNSCRAPPED DATA TO JSON")
@@ -1034,20 +1059,23 @@ class LinkedinScraper:
         # filter by scrapped profile
         cursor.execute(f"SELECT * from ids where is_scrapped_profile=1")
         scrapped_id_data = cursor.fetchall()
-        y = set(list([i["linkedin_url"] for i in scrapped_id_data]))
-        logger.info(len(y))
+        # y = set(list([i["linkedin_url"] for i in scrapped_id_data]))
+        # logger.info(len(y))
         # get data from profile_raw
         cursor.execute(f"SELECT * from profiles_raw")
         scrapped_profile = cursor.fetchall()
-        x = set(list([i["linkedin_url"] for i in scrapped_profile]))
-        logger.info(len(x))
+        # x = set(list([i["linkedin_url"] for i in scrapped_profile]))
+        # logger.info(len(x))
         unscrapped_data = []
         for i in scrapped_id_data:
-            if i["linkedin_url"] not in [
-                x["linkedin_url"] for x in scrapped_profile
-            ] and i["startup_uuid"] not in [
-                x["startup_uuid"] for x in scrapped_profile
+            if {
+                "linkedin_url": i["linkedin_url"],
+                "startup_uuid": i["startup_uuid"],
+            } not in [
+                {"linkedin_url": x["linkedin_url"], "startup_uuid": x["startup_uuid"]}
+                for x in scrapped_profile
             ]:
+
                 unscrapped_data.append(i)
         if not unscrapped_data:
             logger.info("ALL DATA IS GOOD")
@@ -1141,6 +1169,104 @@ class LinkedinScraper:
         )
         conn.commit()
 
+    def _check_proxy(self, proxies):
+        for proxy in proxies:
+            try:
+                response = requests.get(
+                    "https://www.linkedin.com/signup/cold-join?trk=guest_homepage-basic_nav-header-join",
+                    proxies={"http": proxy, "https": proxy},
+                    timeout=0.5,
+                )
+                if response.status_code != 200:
+                    continue
+            except Exception as e:
+                continue
+            driver = Driver(uc=True, incognito=True, headless=True, proxy=proxy)
+            driver.get(
+                "https://www.linkedin.com/signup/cold-join?trk=guest_homepage-basic_nav-header-join"
+            )
+            try:
+                element = WebDriverWait(driver, 5).until(
+                    EC.presence_of_element_located((By.ID, "email-address"))
+                )
+                email_elem = driver.find_element(By.ID, "email-address")
+                driver.execute_script("arguments[0].click();", email_elem)
+                email_elem.send_keys("05pqgur6qu@drowblock.com")
+                sleep(2)
+                password_elem = driver.find_element(By.ID, "password")
+                driver.execute_script("arguments[0].click();", password_elem)
+                password_elem.send_keys("delman12")
+                sleep(2)
+                join = driver.find_element(By.ID, "join-form-submit")
+                driver.execute_script("arguments[0].click();", join)
+                join.send_keys(Keys.ENTER)
+                driver.execute_script("arguments[0].click();", join)
+                join.send_keys(Keys.ENTER)
+                driver.execute_script("arguments[0].click();", join)
+                join.send_keys(Keys.ENTER)
+                sleep(3)
+                element = WebDriverWait(driver, 5).until(
+                    EC.presence_of_element_located((By.ID, "first-name"))
+                )
+                first_name = driver.find_element(By.ID, "first-name")
+                driver.execute_script("arguments[0].click();", first_name)
+                first_name.send_keys(names.get_first_name())
+                sleep(2)
+                last_name = driver.find_element(By.ID, "last-name")
+                driver.execute_script("arguments[0].click();", last_name)
+                last_name.send_keys(names.get_last_name())
+                sleep(2)
+                submit = driver.find_element(By.ID, "join-form-submit")
+                driver.execute_script("arguments[0].click();", submit)
+                sleep(2)
+                submit.send_keys(Keys.ENTER)
+                sleep(1)
+                driver.switch_to.default_content()
+            except:
+                continue
+            # find all iframes on the page
+            try:
+                element = WebDriverWait(driver, 5).until(
+                    EC.presence_of_element_located((By.TAG_NAME, "iframe"))
+                )
+                logger.info(
+                    f'Iframe with title "specific_title" exists. with proxy {proxy}'
+                )
+                driver.quit()
+            except NoSuchElementException:
+                logger.info(f"WORKING PROXY..... {proxy} and registered")
+
+            # iframes = driver.find_elements(By.TAG_NAME, "iframe")
+
+            # # loop through each iframe and check the title attribute
+            # for iframe in iframes:
+            #     title = iframe.get_attribute("title")
+            #     if title == "Security verification":
+            #         logger.info('Iframe with title "specific_title" exists.')
+            #         driver.quit()
+            #     else:
+            #         logger.info(f"WORKING PROXY..... {proxy}")
+            #         driver.quit()
+            #         return proxy
+
+    def _scrape_proxy(self, num_of_worker:int):
+        proxy_to_scrape = "proxy_to_scrape.txt"
+        proxies = []
+        with open(proxy_to_scrape) as f:
+            for line in f:
+                proxies.append(line.strip())
+        acc_to_regist = "acc_to_regist.txt"
+        accounts = []
+        with open(acc_to_regist) as f:
+            for line in f:
+                accounts.append(line.strip())
+        logger.info(accounts)
+        proxy_batch = self.split_list(proxies, num_of_worker)
+        # proxy_batch = [["5.78.102.82:8080"]]
+        with multiprocessing.Pool(processes=len(proxy_batch)) as pool:
+            results = pool.starmap(self._check_proxy, zip(proxy_batch))
+        return results
+
 
 if __name__ == "__main__":
     CREDS = {"username": "", "password": ""}
@@ -1162,13 +1288,16 @@ if __name__ == "__main__":
     # SCRAPE PROFILE DETAILS WITHOUT MULTIPROCESSING
     # profile_id = ls._get_profile_id()
 
+    # SCRAPE WORKING PROXY
+    ls._scrape_proxy(num_of_worker=10)
+
     # SCRAPE PROFILE DETAILS WITH MULTIPROCESSING
-    start = datetime.now()
-    ls._update_profile_json_data(close_conn=True)
-    file_names = ls._scrape_linkedin_profile(batch_size=40)
-    ls._update_profile_db_data(file_names)
-    end = datetime.now()
-    logger.info(f"DUDRATIOOON {end-start}")
+    # start = datetime.now()
+    # ls._update_profile_json_data(close_conn=True)
+    # file_names = ls._scrape_linkedin_profile(batch_size=40)
+    # ls._update_profile_db_data(file_names)
+    # end = datetime.now()
+    # logger.info(f"DUDRATIOOON {end-start}")
 
     # VALIDATE SCRAPE RESULTS
     # ls._validate_scrape_results()
@@ -1179,5 +1308,5 @@ if __name__ == "__main__":
 
     # # GET INVALID URLS
     # ls._get_invalid_url("invalid_urls_solo")
-    # ls._scrape_profile("https://www.linkedin.com/in/vickytsai/")
+    # ls._scrape_profile("https://www.linkedin.com/in/vickytsai/", solo_scrape=True)
 
