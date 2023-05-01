@@ -1,18 +1,28 @@
-This file was provided by: https://www.dll-files.com/
+Custom LinkedinScraper for Upwork Task by Jhordy Wong
+Instructions:
+1. Install python 3.7+ in your system
+2. Install google chrome browser
+3. run python -m pip install -r requirements.txt --user from your terminal to intall necessary package
+4. go to where is linkedin_scraper library installed and replace person.py with person.py at this folders
+There are some variable you need to fill first at main.py line 1167 which is BASE_DATA
+its must be filled with csv raw files which founders to scrape from crunchbase
+you can also use proxy by filling the proxies at proxies.txt and set BYPASS_PROXY = False at line 1168 on main.py
+After that you can run this command:
+# To scrape founder linkedin_url
+python main.py -c update_crunchbase_json
+python main.py -c scrape_crunchbase 
 
-If you downloaded it from somewhere else, please let us know: info@dll-files.com
+# To scrape linkedin profile details
+# please fills accounts.txt with account you wish to use to scrape, you can use multiple account but with all same password
+# you must fill variable ACC_PASS at main.py as password to your account
+python main.py -c scrape_linkedin_profiles
 
-DLL-Files.com is owned and operated by Tilf AB, Sweden. The collection of DLL files as a whole (falls under the “collection copyright” laws) are © Copyright Tilf AB
+# To validate the scrape result
+python main.py -c validate_scrape
 
-The individual DLL files are provided free of charge with the understanding that the user is familiar with their use.
+# To save scrape result
+python main.py -c save_scrape_result
 
-If you need help installing the file, please see:
-https://www.dll-files.com/support/
-or ask your question in the forum:
-https://forum.dll-files.com/
-
-DISCLAIMER AND LIMITATION OF LIABILITY
-
-The Following Refers to all Files with the Extension of "dll" or dlls compressed as "zip".
-
-All files are provided on an as is basis. No guarantees or warranties are given or implied. Downloading files from this site is free of charge and the user assumes all risks of any damages that may occur, including but not limited to loss of data, damages to hardware, or loss of business profits. We do our best to ensure that all files are virus-free using available means. However, all files have not been tested for functionality or contamination. Many have been sent to us by visitors like yourself. Thus, we suggest that you do a virus scan using an up-to-date version of an anti-virus program before use. Please use at your own risk.
+If you want to stop the scrape in the middle of the process you can just close the deployed google chrome
+and dont be worry because all of your data is already saved if you wish to continue to scrape again
+Please be mind, this is semi automatic scrapping which you should solve the captcha if its appear when scraping

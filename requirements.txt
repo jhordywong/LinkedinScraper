@@ -6,4 +6,5 @@ pandas
 bs4
 playsound==1.2.2
 linkedin_scraper
+seleniumbase
 
